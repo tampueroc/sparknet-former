@@ -1,0 +1,19 @@
+trainer:
+  accelerator: gpu      # or "cpu"
+  devices: 1            # number of GPUs/CPUs
+  max_epochs: 10
+  default_root_dir: ./logs  # where to save logs/checkpoints
+  early_stopper_handler:
+    patience: 10
+    mode: min
+    monitor: val_loss
+  checkpoint_handler:
+    dir: ./checkpoints
+    monitor: val_loss
+    mode: min
+  logger:
+    dir: ./logs
+    name: sparknet_experiment
+
+global_params:
+  seed: 42

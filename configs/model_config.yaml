@@ -1,0 +1,36 @@
+fire_state_encoder:
+  in_channels: 1         # Number of channels in the fire bitmask (e.g., binary mask = 1)
+  base_num_filters: 32   # Number of filters in the first convolution
+  depth: 3               # Number of convolutional layers
+  output_dim: 128        # Dimensionality of the final feature embedding
+
+static_landscape_encoder:
+  in_channels: 8         # Each channel represents a landscape feature
+  base_num_filters: 32
+  depth: 3
+  output_dim: 128
+
+feature_fusion:
+  fire_dim: 128     # Must match FireStateEncoder's output_dim (or the dimension after pooling).
+  static_dim: 128   # Must match StaticLandscapeEncoder's output_dim (after pooling).
+  wind_dim: 2       # If you have e.g. wind direction + magnitude.
+  d_model: 128
+  method: "concat"
+  use_mlp: True
+
+temporal_transformer:
+  d_model: 128                # Dimension of each token/embedding
+  nhead: 4                    # Number of attention heads in each layer
+  num_layers: 2               # Number of stacked TransformerEncoderLayers
+  dim_feedforward: 512        # Feedforward network dimension inside each layer
+  dropout: 0.1                # Dropout probability in attention & feedforward sub-layers
+  activation: "relu"          # Non-linear activation function ("relu" or "gelu" are common)
+  use_positional_encoding: True  # Whether to apply sinusoidal positional encoding to the input sequenc
+
+transposed_conv_decoder:
+  in_channels: 128
+  base_num_filters: 64
+  depth: 3
+  out_channels: 1          # single-channel output for binary fire mask
+  use_batchnorm: true
+  final_activation: "sigmoid"

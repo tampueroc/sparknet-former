@@ -1,0 +1,79 @@
+import yaml
+import argparse
+from models.sparknet_former import SparkNetFormer
+from data.datamodule import FireDataModule
+from utils import Logger, EarlyStoppingHandler, CheckpointHandler
+
+def load_yaml_config(path):
+    with open(path, 'r') as f:
+        return yaml.safe_load(f)
+
+def main(args):
+    # 1 Load all three config files
+    default_cfg = load_yaml_config(args.default_config)
+    model_cfg   = load_yaml_config(args.model_config)
+    data_cfg    = load_yaml_config(args.data_config)
+
+    # Configs
+    early_stopper_config = default_cfg['early_stopper_handler']
+    logger_config = default_cfg['logger']
+    checkpoint_config = default_cfg['checkpoint_handler']
+
+    # Logger
+    logger = Logger.get_tensorboard_logger(
+        save_dir=logger_config['dir'],
+        name=logger_config['name']
+    )
+
+    # Callbacks
+    checkpoint_callback = CheckpointHandler.get_checkpoint_callback(
+        dirpath=checkpoint_config['dir'],
+        monitor=checkpoint_config['monitor'],
+        mode=checkpoint_config['mode']
+    )
+    early_stopping_callback = EarlyStoppingHandler.get_early_stopping_callback(
+        monitor=early_stopper_config['monitor'],
+        patience=early_stopper_config['patience'],
+        mode=early_stopper_config['mode']
+    )
+
+    trainer_cfg = default_cfg.get('trainer', {})
+    global_params = default_cfg.get('global_params', {})
+    data_params = data_cfg.get('data', {})
+
+    # 2 Initialize the DataModule
+    dm = FireDataModule(
+        data_dir=data_params['data_dir'],
+        sequence_length=data_params['sequence_length'],
+        batch_size=data_params['batch_size'],
+        num_workers=data_params['num_workers'],
+        drop_last=data_params['drop_last'],
+        seed=global_params.get('seed', 42)
+    )
+
+    # 3 Initialize the Model
+    model = SparkNetFormer(**model_cfg)
+
+    trainer = pl.Trainer(
+        max_epochs=trainer_cfg['max_epochs'],
+        accelerator=trainer_cfg['accelerator'],
+        devices=trainer_cfg['devices'],
+        logger=logger,
+        callbacks=[checkpoint_callback, early_stopping_callback]
+    )
+
+    trainer.fit(
+            model=model,
+            train_dataloaders=dm.train_dataloaders(),
+            val_dataloaders=dm.val_dataloaders()
+    )
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--default_config", default="configs/default_config.yaml", help="Path to default config.")
+    parser.add_argument("--model_config", default="configs/model_config.yaml", help="Path to model config.")
+    parser.add_argument("--data_config", default="configs/data_config.yaml", help="Path to data config.")
+    args = parser.parse_args()
+
+    main(args)
+
