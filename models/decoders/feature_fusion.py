@@ -53,39 +53,43 @@ class FeatureFusion(nn.Module):
     def forward(self, fire_encodings, static_encoding, wind_inputs):
         """
         Args:
-            fire_encodings (Tensor): [B, T, fire_dim],
-                                     or possibly [B, T, d_model] if already projected.
-            static_encoding (Tensor): [B, static_dim],
-                                      or [B, d_model].
+            fire_encodings (Tensor): [B, T, in_channels, H, W].
+            static_encoding (Tensor): [B, in_channels, H, W].
             wind_inputs (Tensor): [B, T, wind_dim].
 
         Returns:
-            fused (Tensor): [B, T, d_model] fused features over time.
+            fused (Tensor): [B, T, d_model, H, W] fused features over time and space.
         """
-        B, T, _ = fire_encodings.shape
+        B, T, _, H, W = fire_encodings.shape
 
-        # 1) Project each to d_model
-        fire_enc = self.fire_projection(fire_encodings)          # [B, T, d_model]
-        wind_enc = self.wind_projection(wind_inputs)             # [B, T, d_model]
+        # 1) Project fire encodings [B, T, in_channels, H, W] -> [B, T, d_model, H, W]
+        fire_enc = self.fire_projection(fire_encodings.flatten(0, 1))  # [B*T, d_model, H, W]
+        fire_enc = fire_enc.view(B, T, -1, H, W)                      # [B, T, d_model, H, W]
 
-        # Static might need to be repeated for each timestep:
-        static_enc = self.static_projection(static_encoding)      # [B, d_model]
-        static_enc = static_enc.unsqueeze(1).expand(B, T, -1)     # [B, T, d_model]
+        # 2) Project static encoding [B, in_channels, H, W] -> [B, d_model, H, W]
+        static_enc = self.static_projection(static_encoding)           # [B, d_model, H, W]
+        static_enc = static_enc.unsqueeze(1).expand(B, T, -1, H, W)    # [B, T, d_model, H, W]
 
-        # 2) Fuse
+        # 3) Project wind inputs [B, T, wind_dim] -> [B, T, d_model, 1, 1]
+        wind_enc = self.wind_projection(wind_inputs)                   # [B, T, d_model]
+        wind_enc = wind_enc.unsqueeze(-1).unsqueeze(-1)                # [B, T, d_model, 1, 1]
+        wind_enc = wind_enc.expand(-1, -1, -1, H, W)                   # [B, T, d_model, H, W]
+
+        # 4) Fuse
         if self.fusion_method == 'concat':
-            fused = torch.cat([fire_enc, static_enc, wind_enc], dim=-1)  # [B, T, 3*d_model]
+            fused = torch.cat([fire_enc, static_enc, wind_enc], dim=2)  # [B, T, 3*d_model, H, W]
         elif self.fusion_method == 'sum':
-            # Must ensure they're the same shape => [B, T, d_model]
-            fused = fire_enc + static_enc + wind_enc
+            fused = fire_enc + static_enc + wind_enc                    # [B, T, d_model, H, W]
         else:
             raise ValueError(f"Unknown fusion_method: {self.fusion_method}")
 
-        # 3) Optional MLP to transform the fused feature
+        # 5) Optional MLP to transform the fused feature
         if self.use_mlp:
-            # Flatten time dimension, apply MLP, and reshape
-            fused = self.mlp(fused.reshape(-1, fused.shape[-1]))  # [(B*T), fused_dim]
-            fused = fused.view(B, T, -1)                          # [B, T, d_model]
+            # Flatten spatial dimensions and apply MLP
+            fused = fused.permute(0, 1, 3, 4, 2)  # [B, T, H, W, fused_dim]
+            fused = self.mlp(fused.reshape(-1, fused.shape[-1]))  # [(B*T*H*W), d_model]
+            fused = fused.view(B, T, H, W, -1)   # [B, T, H, W, d_model]
+            fused = fused.permute(0, 1, 4, 2, 3)  # [B, T, d_model, H, W]
 
         return fused
 

@@ -83,13 +83,13 @@ class SparkNetFormer(pl.LightningModule):
         )
 
         temporal_out = self.temporal_transformer(fused_seq)
-        last_time_step = temporal_out[:, -1, :]  # [B, d_model]
 
-        # Reshape for decoder input
-        B, d_model = last_time_step.shape
-        last_time_step_reshaped = last_time_step.view(B, d_model, 1, 1)  # [B, 128, 1, 1]
+        # 5. Extract the last timestep
+        last_time_step = temporal_out[:, -1, :, :, :]  # [B, d_model, H, W]
 
-        pred_fire_mask = self.decoder(last_time_step_reshaped)  # [B, out_channels, H, W]
+        # 6. Decode to generate the predicted fire mask
+        pred_fire_mask = self.decoder(last_time_step)  # [B, out_channels, H, W]
+
         return pred_fire_mask
 
     def training_step(self, batch, batch_idx):
