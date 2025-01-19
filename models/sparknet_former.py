@@ -131,12 +131,16 @@ class SparkNetFormer(pl.LightningModule):
         pred_binary = (torch.sigmoid(pred) > 0.5).float()  # Convert logits to binary predictions
         # Flatten
         pred_binary = pred_binary.flatten()
-        isochrone_mask = isochrone_mask.flatten().int()
-        self.train_accuracy.update(pred_binary, isochrone_mask)
-        self.train_precision.update(pred_binary, isochrone_mask)
-        self.train_recall.update(pred_binary, isochrone_mask)
-        self.train_f1.update(pred_binary, isochrone_mask)
-        return loss
+        isochrone_mask_flattened= isochrone_mask.flatten().int()
+        self.train_accuracy(pred_binary, isochrone_mask_flattened)
+        self.train_precision(pred_binary, isochrone_mask_flattened)
+        self.train_recall(pred_binary, isochrone_mask_flattened)
+        self.train_f1(pred_binary, isochrone_mask_flattened)
+        self.log("train_accuracy", self.train_acc, on_step=True, on_epoch=False)
+        self.log("train_precision", self.train_prec, on_step=True, on_epoch=False)
+        self.log("train_recall", self.train_rec, on_step=True, on_epoch=False)
+        self.log("train_f1", self.train_f1, on_step=True, on_epoch=False)
+        return {"loss": loss, "predictions": pred, "targets": isochrone_mask}
 
     def validation_step(self, batch, batch_idx):
         fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
@@ -149,10 +153,14 @@ class SparkNetFormer(pl.LightningModule):
         # Flatten
         pred_binary = pred_binary.flatten()
         isochrone_mask_flattened = isochrone_mask.flatten().int()
-        self.val_accuracy.update(pred_binary, isochrone_mask_flattened)
-        self.val_precision.update(pred_binary, isochrone_mask_flattened)
-        self.val_recall.update(pred_binary, isochrone_mask_flattened)
-        self.val_f1.update(pred_binary, isochrone_mask_flattened)
+        self.val_accuracy(pred_binary, isochrone_mask_flattened)
+        self.val_precision(pred_binary, isochrone_mask_flattened)
+        self.val_recall(pred_binary, isochrone_mask_flattened)
+        self.val_f1(pred_binary, isochrone_mask_flattened)
+        self.log("val_accuracy", self.val_acc, on_step=False, on_epoch=True)
+        self.log("val_precision", self.val_prec, on_step=False, on_epoch=True)
+        self.log("val_recall", self.val_rec, on_step=False, on_epoch=True)
+        self.log("val_f1", self.val_f1, on_step=False, on_epoch=True)
         return {"loss": loss, "predictions": pred, "targets": isochrone_mask}
 
     def configure_optimizers(self):
