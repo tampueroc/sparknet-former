@@ -121,15 +121,17 @@ class FireDataset:
         static_data = item['landscape']  # [C, H, W]
 
         # 3) Wind Inputs
-        # We'll only gather wind data for the final frame in that sub-sequence
-        last_frame_idx = item['fire_frame_indices'][-1]
+        # Gather wind data for each timestep in the sub-sequence
         weather_file_name = self.weather_history.iloc[int(seq_id) - 1].values[0].split("Weathers/")[1]
         weather_df = self.weathers[weather_file_name]
-        row = weather_df.iloc[last_frame_idx]
-        ws, wd = row['WS'], row['WD']
-
-        # Use the normalization transform
-        wind_inputs = self.weather_normalizer(ws, wd).unsqueeze(0)  # => [1, 2]
+        wind_inputs = []
+        for frame_idx in item['fire_frame_indices']:
+            row = weather_df.iloc[frame_idx]
+            ws, wd = row['WS'], row['WD']
+            wind_input = self.weather_normalizer(ws, wd).unsqueeze(0)  # => [1, 2]
+            wind_inputs.append(wind_input)
+        # Stack => [T, 2]
+        wind_inputs = torch.cat(wind_inputs, dim=0)
 
         # 4) Isochrone Mask (target)
         itarget = item['iso_target_index']

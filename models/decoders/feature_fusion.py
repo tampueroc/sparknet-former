@@ -69,12 +69,8 @@ class FeatureFusion(nn.Module):
         wind_enc = self.wind_projection(wind_inputs)             # [B, T, d_model]
 
         # Static might need to be repeated for each timestep:
-        print(f"fire_enc shape: {fire_enc.shape}")
-        print(f"wind_enc shape: {wind_enc.shape}")
         static_enc = self.static_projection(static_encoding)      # [B, d_model]
-        print(f"static_enc shape: {static_enc.shape}")
         static_enc = static_enc.unsqueeze(1).expand(B, T, -1)     # [B, T, d_model]
-        print(f"static_enc shape: {static_enc.shape}")
 
         # 2) Fuse
         if self.fusion_method == 'concat':
