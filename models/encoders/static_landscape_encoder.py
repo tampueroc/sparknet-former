@@ -7,7 +7,7 @@ class StaticLandscapeEncoder(nn.Module):
     Encodes static layers (e.g. topography, vegetation) into a latent spatial embedding.
     """
 
-    def __init__(self, in_channels, base_num_filters, depth, output_dim):
+    def __init__(self, in_channels, base_num_filters, depth, output_dim, reduction_factor=4):
         super().__init__()
 
         layers = []
@@ -20,7 +20,7 @@ class StaticLandscapeEncoder(nn.Module):
                     in_channels=current_channels,
                     out_channels=out_channels,
                     kernel_size=3,
-                    stride=1,
+                    stride=2 if reduction_factor > 1 else 1,  # Reduce spatial dimensions progressively
                     padding=1
                 )
             )
