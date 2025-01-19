@@ -12,7 +12,7 @@ trainer:
     monitor: val_loss
     mode: min
   logger:
-    enable: true
+    enabled: true
     dir: ./logs
     name: sparknet_experiment
 
