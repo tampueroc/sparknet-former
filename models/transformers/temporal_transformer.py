@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from .positional_encoders import SinusoidalPositionalEncoding
 from .patch_positional_encoders import Learnable2DPositionalEncoding
+from .patch_embedding import PatchEmbedding
 
 class TemporalTransformerEncoder(nn.Module):
     """
@@ -35,6 +36,7 @@ class TemporalTransformerEncoder(nn.Module):
         # Positional Encoding
         self.use_positional_encoding = use_positional_encoding
         self.patch_size = patch_size
+        self.patch_embed = PatchEmbedding(d_model, patch_size, d_model)
         if self.use_positional_encoding:
             self.pos_encoder = SinusoidalPositionalEncoding(d_model=d_model, max_len=5000)
             self.patch_pos_encoder = Learnable2DPositionalEncoding(d_model, h // patch_size, w // patch_size)
