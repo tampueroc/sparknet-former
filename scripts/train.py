@@ -1,7 +1,7 @@
 import yaml
 import argparse
 import pytorch_lightning as pl
-from utils import Logger, CheckpointHandler, EarlyStoppingHandler
+from utils import Logger, CheckpointHandler, EarlyStoppingHandler, MetricsLoggingCallback
 from data import FireDataModule
 from models import SparkNetFormer
 
@@ -40,6 +40,7 @@ def main(args):
         mode=early_stopper_config['mode'],
         min_delta=early_stopper_config['min_delta']
     )
+    metrics_callback = MetricsLoggingCallback()
 
     global_params = default_cfg.get('global_params', {})
     data_params = data_cfg.get('data', {})
@@ -65,7 +66,7 @@ def main(args):
         devices=trainer_cfg['devices'],
         precision=trainer_cfg['precision'],
         logger=logger,
-        callbacks=[checkpoint_callback, early_stopping_callback]
+        callbacks=[checkpoint_callback, early_stopping_callback, metrics_callback]
     )
 
     trainer.fit(

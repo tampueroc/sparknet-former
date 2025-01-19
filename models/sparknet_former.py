@@ -129,6 +129,9 @@ class SparkNetFormer(pl.LightningModule):
         self.log("train_loss", loss)
         # Update metrics
         pred_binary = (torch.sigmoid(pred) > 0.5).float()  # Convert logits to binary predictions
+        # Flatten
+        pred_binary = pred_binary.flatten()
+        isochrone_mask = isochrone_mask.flatten().int()
         self.train_accuracy.update(pred_binary, isochrone_mask)
         self.train_precision.update(pred_binary, isochrone_mask)
         self.train_recall.update(pred_binary, isochrone_mask)
@@ -143,10 +146,13 @@ class SparkNetFormer(pl.LightningModule):
 
         # Update Metrics
         pred_binary = (torch.sigmoid(pred) > 0.5).float()
-        self.val_accuracy.update(pred_binary, isochrone_mask)
-        self.val_precision.update(pred_binary, isochrone_mask)
-        self.val_recall.update(pred_binary, isochrone_mask)
-        self.val_f1.update(pred_binary, isochrone_mask)
+        # Flatten
+        pred_binary = pred_binary.flatten()
+        isochrone_mask_flattened = isochrone_mask.flatten().int()
+        self.val_accuracy.update(pred_binary, isochrone_mask_flattened)
+        self.val_precision.update(pred_binary, isochrone_mask_flattened)
+        self.val_recall.update(pred_binary, isochrone_mask_flattened)
+        self.val_f1.update(pred_binary, isochrone_mask_flattened)
         # Log predicted vs. target images (only for the first batch of the epoch)
         if batch_idx == 0:
             # Normalize predictions and targets to [0, 1] for TensorBoard
