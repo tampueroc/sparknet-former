@@ -30,7 +30,7 @@ temporal_transformer:
 transposed_conv_decoder:
   in_channels: 128
   base_num_filters: 64
-  depth: 6
+  depth: 9
   out_channels: 1          # single-channel output for binary fire mask
   use_batchnorm: true
   final_activation: "sigmoid"
