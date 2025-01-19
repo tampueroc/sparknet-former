@@ -52,6 +52,7 @@ def main(args):
         drop_last=data_params['drop_last'],
         seed=global_params.get('seed', 42)
     )
+    dm.setup()
 
     # 3 Initialize the Model
     model = SparkNetFormer(model_cfg)
@@ -66,8 +67,8 @@ def main(args):
 
     trainer.fit(
             model=model,
-            train_dataloaders=dm.train_dataloaders(),
-            val_dataloaders=dm.val_dataloaders()
+            train_dataloaders=dm.train_dataloader(),
+            val_dataloaders=dm.val_dataloader()
     )
 
 if __name__ == "__main__":
