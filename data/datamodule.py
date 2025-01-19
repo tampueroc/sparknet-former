@@ -72,6 +72,7 @@ class FireDataModule(pl.LightningDataModule):
 
             # Split lengths (rounded down by int conversion, last segment picks up any remainder)
             full_len = len(self.dataset)
+            print(full_len)
             train_len = int(0.8 * full_len)
             val_len   = int(0.1 * full_len)
             test_len  = full_len - train_len - val_len  # ensures total = full_len
