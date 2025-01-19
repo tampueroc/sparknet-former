@@ -82,6 +82,7 @@ class FireDataset:
             # Extract from xarray => shape [C, height, width]
             cropped = self.landscape_data[:, y:y_, x:x_].values
             cropped_tensor = torch.from_numpy(cropped).float()
+            cropped_tensor = cropped_tensor.unsqueeze(0)  # Shape [1, C, H, W]
 
             # Build sub-sequences of length up to `self.sequence_length`
             T = min(num_frames, self.sequence_length)
@@ -112,13 +113,16 @@ class FireDataset:
         for frame_idx in item['fire_frame_indices']:
             fpath = os.path.join(item['fire_path'], item['fire_files'][frame_idx])
             img = read_image(fpath)  # [3, H, W]
-            mask = torch.where(img[1] == 231, 1.0, 0.0)  # [H, W]
+
+            # Create the binary mask and add a channel dimension [C=1, H, W]
+            mask = torch.where(img[1] == 231, 1.0, 0.0).unsqueeze(0)  # [1, H, W]
             frame_masks.append(mask)
-        # Stack => [T, H, W]
-        fire_sequence = torch.stack(frame_masks, dim=0)
+
+        # Stack along the temporal dimension => [T, C, H, W]
+        fire_sequence = torch.stack(frame_masks, dim=0)  # [T, 1, H, W]
 
         # 2) Static Data (landscape)
-        static_data = item['landscape']  # [C, H, W]
+        static_data = item['landscape']  # [1, C, H, W]
 
         # 3) Wind Inputs
         # Gather wind data for each timestep in the sub-sequence
