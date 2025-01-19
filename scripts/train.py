@@ -54,7 +54,7 @@ def main(args):
     )
 
     # 3 Initialize the Model
-    model = SparkNetFormer(**model_cfg)
+    model = SparkNetFormer(model_cfg)
 
     trainer = pl.Trainer(
         max_epochs=trainer_cfg['max_epochs'],
