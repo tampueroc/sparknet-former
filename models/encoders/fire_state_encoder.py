@@ -69,7 +69,6 @@ class FireStateEncoder(nn.Module):
 
         # Stack along time dimension => [B, T, output_dim, H', W']
         embeddings = torch.stack(embeddings, dim=1)
-        embeddings = torch.mean(embeddings, dim=(-2, -1))  # [B, T, output_dim]
 
         return embeddings
 
