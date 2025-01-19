@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+from torcheval.metrics import BinaryAccuracy, BinaryF1Score, BinaryPrecision, BinaryRecall
 import torchvision.utils as vutils
 import torch
 import torch.optim as optim
@@ -25,6 +26,18 @@ class SparkNetFormer(pl.LightningModule):
     def __init__(self, config, learning_rate=1e-3):
         super().__init__()
         self.save_hyperparameters()
+
+        # Metrics for training
+        self.train_accuracy = BinaryAccuracy()
+        self.train_precision = BinaryPrecision()
+        self.train_recall = BinaryRecall()
+        self.train_f1 = BinaryF1Score()
+
+        # Metrics for validation
+        self.val_accuracy = BinaryAccuracy()
+        self.val_precision = BinaryPrecision()
+        self.val_recall = BinaryRecall()
+        self.val_f1 = BinaryF1Score()
 
         # 1. Encoders
         fire_cfg = config["fire_state_encoder"]
@@ -114,6 +127,12 @@ class SparkNetFormer(pl.LightningModule):
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
         loss = compute_loss(pred, isochrone_mask)
         self.log("train_loss", loss)
+        # Update metrics
+        pred_binary = (torch.sigmoid(pred) > 0.5).float()  # Convert logits to binary predictions
+        self.train_accuracy.update(pred_binary, isochrone_mask)
+        self.train_precision.update(pred_binary, isochrone_mask)
+        self.train_recall.update(pred_binary, isochrone_mask)
+        self.train_f1.update(pred_binary, isochrone_mask)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -121,6 +140,13 @@ class SparkNetFormer(pl.LightningModule):
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
         loss = compute_loss(pred, isochrone_mask)
         self.log("val_loss", loss, prog_bar=True)
+
+        # Update Metrics
+        pred_binary = (torch.sigmoid(pred) > 0.5).float()
+        self.val_accuracy.update(pred_binary, isochrone_mask)
+        self.val_precision.update(pred_binary, isochrone_mask)
+        self.val_recall.update(pred_binary, isochrone_mask)
+        self.val_f1.update(pred_binary, isochrone_mask)
         # Log predicted vs. target images (only for the first batch of the epoch)
         if batch_idx == 0:
             # Normalize predictions and targets to [0, 1] for TensorBoard
@@ -139,4 +165,42 @@ class SparkNetFormer(pl.LightningModule):
 
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+
+    def training_epoch_end(self, outputs):
+        # Compute metrics
+        train_acc = self.train_accuracy.compute()
+        train_prec = self.train_precision.compute()
+        train_rec = self.train_recall.compute()
+        train_f1 = self.train_f1.compute()
+
+        # Log metrics
+        self.log("train_accuracy", train_acc, prog_bar=True)
+        self.log("train_precision", train_prec, prog_bar=True)
+        self.log("train_recall", train_rec, prog_bar=True)
+        self.log("train_f1", train_f1, prog_bar=True)
+
+        # Reset metrics
+        self.train_accuracy.reset()
+        self.train_precision.reset()
+        self.train_recall.reset()
+        self.train_f1.reset()
+
+    def validation_epoch_end(self, outputs):
+        # Compute metrics
+        val_acc = self.val_accuracy.compute()
+        val_prec = self.val_precision.compute()
+        val_rec = self.val_recall.compute()
+        val_f1 = self.val_f1.compute()
+
+        # Log metrics
+        self.log("val_accuracy", val_acc, prog_bar=True)
+        self.log("val_precision", val_prec, prog_bar=True)
+        self.log("val_recall", val_rec, prog_bar=True)
+        self.log("val_f1", val_f1, prog_bar=True)
+
+        # Reset metrics
+        self.val_accuracy.reset()
+        self.val_precision.reset()
+        self.val_recall.reset()
+        self.val_f1.reset()
 

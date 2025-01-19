@@ -37,7 +37,8 @@ def main(args):
     early_stopping_callback = EarlyStoppingHandler.get_early_stopping_callback(
         monitor=early_stopper_config['monitor'],
         patience=early_stopper_config['patience'],
-        mode=early_stopper_config['mode']
+        mode=early_stopper_config['mode'],
+        min_delta=early_stopper_config['min_delta']
     )
 
     global_params = default_cfg.get('global_params', {})
