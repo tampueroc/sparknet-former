@@ -2,17 +2,16 @@ import math
 import torch
 import torch.nn as nn
 
+
 class SinusoidalPositionalEncoding(nn.Module):
     """
-    Computes and adds sinusoidal positional embeddings to your input sequences.
-    Useful for 1D sequences (e.g., time series, text).
+    Computes and adds sinusoidal positional embeddings along the temporal axis (T).
     """
-
     def __init__(self, d_model, max_len=5000):
         """
         Args:
             d_model (int): Dimensionality of the embeddings.
-            max_len (int): Maximum sequence length to precompute positions for.
+            max_len (int): Maximum sequence length (T) to precompute positions for.
         """
         super().__init__()
         # Create a long enough 'pe' matrix once in log space
@@ -31,18 +30,25 @@ class SinusoidalPositionalEncoding(nn.Module):
     def forward(self, x):
         """
         Args:
-            x (Tensor): Input embeddings of shape [batch_size, seq_len, d_model].
+            x (Tensor): Input embeddings of shape [batch_size, T, d_model, H, W].
 
         Returns:
-            Tensor: The same shape as x, with positional encodings added.
+            Tensor: The same shape as x, with positional encodings added along T.
         """
-        seq_len = x.size(1)
+        batch_size, T, d_model, H, W = x.shape
 
-        # pe[:seq_len] => [seq_len, d_model]
-        # unsqueeze(0) => [1, seq_len, d_model] for broadcasting
-        pos_encoding = self.pe[:seq_len, :].unsqueeze(0)
+        # Validate the d_model matches
+        if d_model != self.pe.size(1):
+            raise ValueError(f"Input embedding dimension {d_model} does not match positional encoding dimension {self.pe.size(1)}.")
 
-        # Add the positional encoding to each batch
+        # Ensure T doesn't exceed precomputed max_len
+        if T > self.pe.size(0):
+            raise ValueError(f"Temporal sequence length {T} exceeds the maximum length {self.pe.size(0)} of positional encoding.")
+
+        # Extract required positional encodings
+        pos_encoding = self.pe[:T, :].unsqueeze(1).unsqueeze(3).unsqueeze(4)  # [T, 1, d_model, 1, 1]
+
+        # Add positional encodings along T, broadcasting over H and W
         x = x + pos_encoding
         return x
 
