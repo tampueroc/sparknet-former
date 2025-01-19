@@ -81,5 +81,7 @@ class TransposedConvDecoder(nn.Module):
         # 3) Optional final activation
         if self.final_activation:
             out = self.final_activation(out)
+        # Resize to exact dimensions (512 -> 400)
+        out = out[:, :, 56:456, 56:456]  # Crop the center region for 400x400
         return out
 
