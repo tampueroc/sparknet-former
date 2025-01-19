@@ -38,7 +38,8 @@ class TemporalTransformerEncoder(nn.Module):
             nhead=nhead,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            activation=activation
+            activation=activation,
+            batch_first=True  # Set this to True
         )
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 

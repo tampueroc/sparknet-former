@@ -3,5 +3,5 @@ data:
   sequence_length: 5
   batch_size: 8
   num_workers: 4
-  drop_last: false
+  drop_last: true
 
