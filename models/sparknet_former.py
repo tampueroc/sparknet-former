@@ -84,11 +84,11 @@ class SparkNetFormer(pl.LightningModule):
 
         temporal_out = self.temporal_transformer(fused_seq)
         last_time_step = temporal_out[:, -1, :]  # [B, d_model]
-        # Reshape to match decoder input dimensions
+
+        # Reshape for decoder input
         B, d_model = last_time_step.shape
-        C = 128  # Decoder's `in_channels`
-        spatial_dim = 50  # Initial spatial dimensions (50x50)
-        last_time_step_reshaped = last_time_step.view(B, C, spatial_dim, spatial_dim)  # [B, C, 50, 50]
+        last_time_step_reshaped = last_time_step.view(B, d_model, 1, 1)  # [B, 128, 1, 1]
+
         pred_fire_mask = self.decoder(last_time_step_reshaped)  # [B, out_channels, H, W]
         return pred_fire_mask
 
