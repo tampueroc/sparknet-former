@@ -4,6 +4,45 @@ from torch.utils.data import DataLoader, random_split
 
 from .dataset import FireDataset
 
+from torch.nn.utils.rnn import pad_sequence
+
+def collate_fn(batch):
+    """
+    Custom collate function to pad sequences and create a binary mask for valid positions.
+
+    Args:
+        batch: List of tuples (fire_sequence, static_data, wind_inputs, isochrone_mask).
+    Returns:
+        padded_fire_sequences: Tensor [B, T_max, C, H, W].
+        static_data: Tensor [B, 1, C, H, W].
+        padded_wind_inputs: Tensor [B, T_max, 2].
+        isochrone_masks: Tensor [B, 1, H, W].
+        valid_tokens: Tensor [B, T_max] (1 for valid, 0 for padded positions).
+    """
+    fire_sequences, static_data, wind_inputs, isochrone_masks = zip(*batch)
+
+    # 1. Find the maximum sequence length in the batch
+    max_len = max(seq.size(0) for seq in fire_sequences)
+
+    # 2. Pad fire sequences along the temporal dimension
+    padded_fire_sequences = torch.zeros(len(fire_sequences), max_len, *fire_sequences[0].shape[1:])
+    for i, seq in enumerate(fire_sequences):
+        padded_fire_sequences[i, :seq.size(0)] = seq
+
+    # 3. Create valid_tokens mask for padded positions
+    valid_tokens = torch.zeros(len(fire_sequences), max_len, dtype=torch.float32)
+    for i, seq in enumerate(fire_sequences):
+        valid_tokens[i, :seq.size(0)] = 1  # Mark valid positions as 1
+
+    # 4. Pad wind inputs along the temporal dimension
+    padded_wind_inputs = pad_sequence(wind_inputs, batch_first=True, padding_value=0.0)  # [B, T_max, 2]
+
+    # 5. Stack static_data and isochrone_masks (assume fixed spatial dimensions)
+    static_data = torch.stack(static_data)  # [B, 1, C, H, W]
+    isochrone_masks = torch.stack(isochrone_masks)  # [B, 1, H, W]
+
+    return padded_fire_sequences, static_data, padded_wind_inputs, isochrone_masks, valid_tokens
+
 
 class FireDataModule(pl.LightningDataModule):
     """
@@ -90,7 +129,8 @@ class FireDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
-            drop_last=self.drop_last
+            drop_last=self.drop_last,
+            collate_fn=collate_fn
         )
 
     def val_dataloader(self):
@@ -99,7 +139,8 @@ class FireDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            drop_last=self.drop_last
+            drop_last=self.drop_last,
+            collate_fn=collate_fn
         )
 
     def test_dataloader(self):
@@ -108,5 +149,6 @@ class FireDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            drop_last=self.drop_last
+            drop_last=self.drop_last,
+            collate_fn=collate_fn
         )

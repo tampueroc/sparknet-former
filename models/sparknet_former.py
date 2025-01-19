@@ -5,6 +5,12 @@ from .encoders import FireStateEncoder, StaticLandscapeEncoder
 from .transformers import TemporalTransformerEncoder
 from .decoders import FeatureFusion, TransposedConvDecoder
 
+def compute_loss(pred, target, mask):
+    valid_pred = pred * mask
+    valid_target = target * mask
+    loss = F.binary_cross_entropy_with_logits(valid_pred, valid_target)
+    return loss
+
 class SparkNetFormer(pl.LightningModule):
     def __init__(self, config, learning_rate=1e-3):
         super().__init__()
@@ -61,12 +67,13 @@ class SparkNetFormer(pl.LightningModule):
             final_activation=dec_cfg.get("final_activation", None)
         )
 
-    def forward(self, fire_sequence, static_data, wind_inputs):
+    def forward(self, fire_sequence, static_data, wind_inputs, valid_tokens=None):
         """
         Args:
             fire_sequence (Tensor): [B, T, H, W]
             static_data (Tensor):   [B, C, H, W]
             wind_inputs (Tensor):   [B, T, <wind_features>] (e.g. direction, magnitude)
+            valid_tokens (Tensor):  [B, T] - Binary mask indicating valid positions.
 
         Returns:
             next_fire_state (Tensor): predicted fire mask for the next timestep
@@ -82,7 +89,7 @@ class SparkNetFormer(pl.LightningModule):
             wind_inputs=wind_inputs
         )
 
-        temporal_out = self.temporal_transformer(fused_seq)
+        temporal_out = self.temporal_transformer(fused_seq, src_key_padding_mask=~valid_tokens.bool())
 
         # 5. Extract the last timestep
         last_time_step = temporal_out[:, -1, :, :, :]  # [B, d_model, H, W]
@@ -93,16 +100,16 @@ class SparkNetFormer(pl.LightningModule):
         return pred_fire_mask
 
     def training_step(self, batch, batch_idx):
-        fire_seq, static_data, wind_inputs, isochrone_mask = batch
-        pred = self(fire_seq, static_data, wind_inputs)
-        loss = F.binary_cross_entropy_with_logits(pred, isochrone_mask)
+        fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
+        pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
+        loss = compute_loss(pred, isochrone_mask, mask=valid_tokens.unsqueeze(1))
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        fire_seq, static_data, wind_inputs, isochrone_mask = batch
-        pred = self(fire_seq, static_data, wind_inputs)
-        loss = F.binary_cross_entropy_with_logits(pred, isochrone_mask)
+        fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
+        pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
+        loss = compute_loss(pred, isochrone_mask, mask=valid_tokens.unsqueeze(1))
         self.log("val_loss", loss, prog_bar=True)
         return loss
 
