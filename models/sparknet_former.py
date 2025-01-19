@@ -153,7 +153,7 @@ class SparkNetFormer(pl.LightningModule):
         self.val_precision.update(pred_binary, isochrone_mask_flattened)
         self.val_recall.update(pred_binary, isochrone_mask_flattened)
         self.val_f1.update(pred_binary, isochrone_mask_flattened)
-        return loss
+        return {"loss": loss, "predictions": pred, "targets": isochrone_mask}
 
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
