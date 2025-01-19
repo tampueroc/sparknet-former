@@ -135,9 +135,9 @@ class SparkNetFormer(pl.LightningModule):
         self.train_precision(pred_binary, isochrone_mask_flattened)
         self.train_recall(pred_binary, isochrone_mask_flattened)
         self.train_f1(pred_binary, isochrone_mask_flattened)
-        self.log("train_accuracy", self.train_acc, on_step=True, on_epoch=False)
-        self.log("train_precision", self.train_prec, on_step=True, on_epoch=False)
-        self.log("train_recall", self.train_rec, on_step=True, on_epoch=False)
+        self.log("train_accuracy", self.train_accuracy, on_step=True, on_epoch=False)
+        self.log("train_precision", self.train_precision, on_step=True, on_epoch=False)
+        self.log("train_recall", self.train_recall, on_step=True, on_epoch=False)
         self.log("train_f1", self.train_f1, on_step=True, on_epoch=False)
         return {"loss": loss, "predictions": pred, "targets": isochrone_mask}
 
@@ -156,9 +156,9 @@ class SparkNetFormer(pl.LightningModule):
         self.val_precision(pred_binary, isochrone_mask_flattened)
         self.val_recall(pred_binary, isochrone_mask_flattened)
         self.val_f1(pred_binary, isochrone_mask_flattened)
-        self.log("val_accuracy", self.val_acc, on_step=False, on_epoch=True)
-        self.log("val_precision", self.val_prec, on_step=False, on_epoch=True)
-        self.log("val_recall", self.val_rec, on_step=False, on_epoch=True)
+        self.log("val_accuracy", self.val_accuracy, on_step=False, on_epoch=True)
+        self.log("val_precision", self.val_precision, on_step=False, on_epoch=True)
+        self.log("val_recall", self.val_recall, on_step=False, on_epoch=True)
         self.log("val_f1", self.val_f1, on_step=False, on_epoch=True)
         return {"loss": loss, "predictions": pred, "targets": isochrone_mask}
 
