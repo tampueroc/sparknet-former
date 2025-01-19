@@ -6,7 +6,7 @@ from .transformers import TemporalTransformerEncoder
 from .decoders import FeatureFusion, TransposedConvDecoder
 
 class SparkNetFormer(pl.LightningModule):
-    def __init__(self, config):
+    def __init__(self, config, learning_rate=1e-3):
         super().__init__()
         self.save_hyperparameters()
 
