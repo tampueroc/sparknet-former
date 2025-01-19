@@ -82,13 +82,14 @@ class SparkNetFormer(pl.LightningModule):
             wind_inputs=wind_inputs
         )
 
-        B, T, C, H, W = fused_seq.shape
-        fused_seq = fused_seq.view(B, T, C * H * W)  # [B, T, d_model] where d_model = C * H * W
-
         temporal_out = self.temporal_transformer(fused_seq)
         last_time_step = temporal_out[:, -1, :]  # [B, d_model]
-        last_time_step = last_time_step.view(B, C, H, W)  # [B, C, H, W]
-        pred_fire_mask = self.decoder(last_time_step)  # [B, out_channels, H, W]
+        # Reshape to match decoder input dimensions
+        B, d_model = last_time_step.shape
+        C = 128  # Decoder's `in_channels`
+        spatial_dim = 50  # Initial spatial dimensions (50x50)
+        last_time_step_reshaped = last_time_step.view(B, C, spatial_dim, spatial_dim)  # [B, C, 50, 50]
+        pred_fire_mask = self.decoder(last_time_step_reshaped)  # [B, out_channels, H, W]
         return pred_fire_mask
 
     def training_step(self, batch, batch_idx):
