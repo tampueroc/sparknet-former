@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
-
+import torch.optim as optim
+import torch.nn.functional as F
 from .encoders import FireStateEncoder, StaticLandscapeEncoder
 from .transformers import TemporalTransformerEncoder
 from .decoders import FeatureFusion, TransposedConvDecoder
@@ -7,6 +8,7 @@ from .decoders import FeatureFusion, TransposedConvDecoder
 class SparkNetFormer(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
+        self.save_hyperparameters()
 
         # 1. Encoders
         fire_cfg = config["fire_state_encoder"]
@@ -84,3 +86,21 @@ class SparkNetFormer(pl.LightningModule):
         last_time_step = temporal_out[:, -1, :, :, :]
         pred_fire_mask = self.decoder(last_time_step)
         return pred_fire_mask
+
+    def training_step(self, batch, batch_idx):
+        fire_seq, static_data, wind_inputs, isochrone_mask = batch
+        pred = self(fire_seq, static_data, wind_inputs)
+        loss = F.binary_cross_entropy_with_logits(pred, isochrone_mask)
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        fire_seq, static_data, wind_inputs, isochrone_mask = batch
+        pred = self(fire_seq, static_data, wind_inputs)
+        loss = F.binary_cross_entropy_with_logits(pred, isochrone_mask)
+        self.log("val_loss", loss, prog_bar=True)
+        return loss
+
+    def configure_optimizers(self):
+        return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+
