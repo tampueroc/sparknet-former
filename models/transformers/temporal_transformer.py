@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+from .positional_encoders import SinusoidalPositionalEncoding
 
 class TemporalTransformerEncoder(nn.Module):
     """
     A temporal Transformer that processes spatiotemporal embeddings.
-    Handles inputs with shape [B, T, C, H, W].
+    Handles inputs with shape [B, T, C, H, W], preserving temporal order within each sequence.
     """
 
     def __init__(self,
@@ -30,7 +31,6 @@ class TemporalTransformerEncoder(nn.Module):
         # Positional Encoding
         self.use_positional_encoding = use_positional_encoding
         if self.use_positional_encoding:
-            from .positional_encoders import SinusoidalPositionalEncoding
             self.pos_encoder = SinusoidalPositionalEncoding(d_model=d_model, max_len=5000)
 
         # Transformer Encoder
@@ -47,33 +47,30 @@ class TemporalTransformerEncoder(nn.Module):
     def forward(self, x, src_mask=None, src_key_padding_mask=None):
         """
         Args:
-            x (Tensor): [batch_size, seq_len, channels, height, width]
-            src_mask (Tensor): Optional attention mask of shape [seq_len, seq_len].
-            src_key_padding_mask (Tensor): Optional padding mask of shape [batch_size, seq_len].
+            x (Tensor): [B, T, C, H, W]
+            src_mask (Tensor): Optional attention mask of shape [T, T].
+            src_key_padding_mask (Tensor): Optional padding mask of shape [B * H * W, T].
 
         Returns:
-            encoded (Tensor): [batch_size, seq_len, d_model, height, width],
+            encoded (Tensor): [B, T, d_model, H, W],
                               the transformed spatiotemporal sequence embeddings.
         """
         B, T, C, H, W = x.shape
 
-        # Flatten spatial dimensions into sequence
-        x = x.view(B, T, C, -1)  # [B, T, C, H*W]
-        x = x.permute(0, 1, 3, 2)  # [B, T, H*W, C]
-        x = x.flatten(1, 2)  # [B, T*H*W, C]
+        # Reshape for processing each spatial position independently
+        x = x.permute(0, 3, 4, 1, 2)  # [B, H, W, T, C]
+        x = x.reshape(B * H * W, T, C)  # [B * H * W, T, C]
 
         # Optionally add positional encoding
         if self.use_positional_encoding:
-            x = self.pos_encoder(x)
+            x = self.pos_encoder(x)  # [B * H * W, T, C]
 
         # Pass through the Transformer
         encoded = self.transformer_encoder(
             x, src_mask=src_mask, src_key_padding_mask=src_key_padding_mask
-        )  # [B, T*H*W, d_model]
+        )  # [B * H * W, T, d_model]
 
         # Reshape back to spatiotemporal form
-        encoded = encoded.view(B, T, H, W, -1)  # [B, T, H, W, d_model]
-        encoded = encoded.permute(0, 1, 4, 2, 3)  # [B, T, d_model, H, W]
+        encoded = encoded.view(B, H, W, T, -1).permute(0, 3, 4, 1, 2)  # [B, T, d_model, H, W]
 
         return encoded
-
