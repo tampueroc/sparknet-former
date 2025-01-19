@@ -1,6 +1,5 @@
 import pytorch_lightning as pl
-from torcheval.metrics import BinaryAccuracy, BinaryF1Score, BinaryPrecision, BinaryRecall
-import torchvision.utils as vutils
+import torchmetrics
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -28,16 +27,16 @@ class SparkNetFormer(pl.LightningModule):
         self.save_hyperparameters()
 
         # Metrics for training
-        self.train_accuracy = BinaryAccuracy()
-        self.train_precision = BinaryPrecision()
-        self.train_recall = BinaryRecall()
-        self.train_f1 = BinaryF1Score()
+        self.train_accuracy = torchmetrics.classification.BinaryAccuracy()
+        self.train_precision = torchmetrics.classification.BinaryPrecision()
+        self.train_recall = torchmetrics.classification.BinaryRecall()
+        self.train_f1 = torchmetrics.classification.BinaryF1Score()
 
-        # Metrics for validation
-        self.val_accuracy = BinaryAccuracy()
-        self.val_precision = BinaryPrecision()
-        self.val_recall = BinaryRecall()
-        self.val_f1 = BinaryF1Score()
+        # Metrics for training
+        self.val_accuracy = torchmetrics.classification.BinaryAccuracy()
+        self.val_precision = torchmetrics.classification.BinaryPrecision()
+        self.val_recall = torchmetrics.classification.BinaryRecall()
+        self.val_f1 = torchmetrics.classification.BinaryF1Score()
 
         # 1. Encoders
         fire_cfg = config["fire_state_encoder"]
