@@ -8,13 +8,14 @@ class FireStateEncoder(nn.Module):
     Encodes each timestep's 2D bitmask into a latent spatial embedding.
     """
 
-    def __init__(self, in_channels, base_num_filters, depth, output_dim):
+    def __init__(self, in_channels, base_num_filters, depth, output_dim, reduction_factor=4):
         """
         Args:
             in_channels (int): Number of input channels in a single bitmask.
             base_num_filters (int): Number of filters in the first conv layer.
             depth (int): How many convolution layers to stack.
             output_dim (int): Dimensionality of the final latent embedding.
+            reduction_factor (int): Factor to reduce spatial dimensions by (e.g., 4 = H/4, W/4).
         """
         super().__init__()
 
@@ -29,7 +30,7 @@ class FireStateEncoder(nn.Module):
                     in_channels=current_channels,
                     out_channels=out_channels,
                     kernel_size=3,
-                    stride=1,
+                    stride=2 if reduction_factor > 1 else 1,  # Reduce spatial dimensions progressively
                     padding=1
                 )
             )
