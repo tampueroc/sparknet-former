@@ -111,14 +111,14 @@ class SparkNetFormer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
-        loss = compute_loss(pred, isochrone_mask, mask=valid_tokens.unsqueeze(1))
+        loss = compute_loss(pred, isochrone_mask)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
-        loss = compute_loss(pred, isochrone_mask, mask=valid_tokens.unsqueeze(1))
+        loss = compute_loss(pred, isochrone_mask)
         self.log("val_loss", loss, prog_bar=True)
         return loss
 
