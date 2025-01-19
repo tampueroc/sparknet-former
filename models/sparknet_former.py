@@ -19,9 +19,13 @@ def compute_loss(pred, target, mask=None):
         loss: Masked loss value.
     """
     if mask is not None:
-        # Reshape mask to match pred dimensions
+        print(f"Mask shape before expand: {mask.shape}")
+        print(f"Pred shape: {pred.shape}")
+        # Correctly reshape mask to match [B, T, 1, 1]
         mask = mask.unsqueeze(-1).unsqueeze(-1)  # [B, T] -> [B, T, 1, 1]
-        mask = mask.expand(-1, -1, pred.size(2), pred.size(3))  # [B, T, H, W]
+
+        # Expand mask to match spatial dimensions [B, T, H, W]
+        mask = mask.expand(-1, -1, pred.size(2), pred.size(3))
 
         # Apply mask to pred and target
         pred = pred * mask
