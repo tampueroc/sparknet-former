@@ -50,6 +50,7 @@ def main(args):
         batch_size=data_params['batch_size'],
         num_workers=data_params['num_workers'],
         drop_last=data_params['drop_last'],
+        pin_memory=data_params['pin_memory'],
         seed=global_params.get('seed', 42)
     )
     dm.setup()
@@ -61,6 +62,7 @@ def main(args):
         max_epochs=trainer_cfg['max_epochs'],
         accelerator=trainer_cfg['accelerator'],
         devices=trainer_cfg['devices'],
+        precision=trainer_cfg['precision'],
         logger=logger,
         callbacks=[checkpoint_callback, early_stopping_callback]
     )

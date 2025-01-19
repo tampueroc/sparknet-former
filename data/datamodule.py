@@ -56,7 +56,8 @@ class FireDataModule(pl.LightningDataModule):
         batch_size: int = 4,
         num_workers: int = 4,
         seed: int = 42,
-        drop_last: bool = False
+        drop_last: bool = False,
+        pin_memory: bool = True
     ):
         """
         A LightningDataModule for the FireDataset.
@@ -78,6 +79,7 @@ class FireDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.seed = seed
         self.drop_last = drop_last
+        self.pin_memory = pin_memory
 
         self.dataset = None
         self.train_dataset = None
@@ -130,7 +132,8 @@ class FireDataModule(pl.LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             drop_last=self.drop_last,
-            collate_fn=collate_fn
+            collate_fn=collate_fn,
+            pin_memory=self.pin_memory
         )
 
     def val_dataloader(self):
@@ -140,7 +143,8 @@ class FireDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             drop_last=self.drop_last,
-            collate_fn=collate_fn
+            collate_fn=collate_fn,
+            pin_memory=self.pin_memory
         )
 
     def test_dataloader(self):
@@ -150,5 +154,6 @@ class FireDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             drop_last=self.drop_last,
-            collate_fn=collate_fn
+            collate_fn=collate_fn,
+            pin_memory=self.pin_memory
         )
