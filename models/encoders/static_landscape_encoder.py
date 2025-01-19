@@ -40,5 +40,6 @@ class StaticLandscapeEncoder(nn.Module):
         """
         out = self.conv_layers(x)
         out = self.projection(out)
+        out = torch.mean(out, dim=(2, 3))  # [B, output_dim]
         return out
 
