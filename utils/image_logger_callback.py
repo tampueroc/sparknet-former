@@ -36,7 +36,7 @@ class ImagePredictionLogger(Callback):
                                          target_images[:self.num_images]], dim=-1)  # [B, C, H, W * 3]
 
             # Create a grid for visualization
-            comparison_grid = vutils.make_grid(combined_images, nrow=4, normalize=True, range=(0, 1))
+            comparison_grid = vutils.make_grid(combined_images, nrow=4, normalize=True, value_range=(0, 1))
 
             # Log the comparison grid to TensorBoard
             trainer.logger.experiment.add_image(
