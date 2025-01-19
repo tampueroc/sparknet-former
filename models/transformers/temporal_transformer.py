@@ -67,7 +67,7 @@ class TemporalTransformerEncoder(nn.Module):
 
         # Pass through the Transformer
         encoded = self.transformer_encoder(
-            x, src_mask=src_mask, src_key_padding_mask=src_key_padding_mask
+            x, mask=src_mask, src_key_padding_mask=src_key_padding_mask
         )  # [B * H * W, T, d_model]
 
         # Reshape back to spatiotemporal form
