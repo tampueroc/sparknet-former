@@ -2,7 +2,7 @@ import torch
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
 
-from dataset import FireDataset
+from .dataset import FireDataset
 
 
 class FireDataModule(pl.LightningDataModule):

@@ -3,7 +3,7 @@ import torch
 import json
 from torchvision.io import read_image
 
-from transforms import LandscapeNormalize, WeatherNormalize
+from .transforms import LandscapeNormalize, WeatherNormalize
 
 
 class FireDataset:
@@ -74,6 +74,7 @@ class FireDataset:
 
             # Crop the big landscape to just the chunk for this sequence
             # Indices file structure: "str(int(seq_id))": [y, y_, x, x_]
+            seq_id = str(int(seq_id))
             if seq_id not in self.indices:
                 raise ValueError(f"No indices found for seq {seq_id}")
             y, y_, x, x_ = self.indices[seq_id]

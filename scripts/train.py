@@ -1,8 +1,9 @@
 import yaml
 import argparse
-from models.sparknet_former import SparkNetFormer
-from data.datamodule import FireDataModule
-from utils import Logger, EarlyStoppingHandler, CheckpointHandler
+import pytorch_lightning as pl
+from utils import Logger, CheckpointHandler, EarlyStoppingHandler
+from data import FireDataModule
+from models import SparkNetFormer
 
 def load_yaml_config(path):
     with open(path, 'r') as f:
@@ -15,15 +16,17 @@ def main(args):
     data_cfg    = load_yaml_config(args.data_config)
 
     # Configs
-    early_stopper_config = default_cfg['early_stopper_handler']
-    logger_config = default_cfg['logger']
-    checkpoint_config = default_cfg['checkpoint_handler']
+    trainer_cfg = default_cfg.get('trainer', {})
+    early_stopper_config = trainer_cfg['early_stopper_handler']
+    logger_config = trainer_cfg['logger']
+    checkpoint_config = trainer_cfg['checkpoint_handler']
 
     # Logger
-    logger = Logger.get_tensorboard_logger(
-        save_dir=logger_config['dir'],
-        name=logger_config['name']
-    )
+    if logger_config.get('enabled', False):
+        logger = Logger.get_tensorboard_logger(
+            save_dir=logger_config['dir'],
+            name=logger_config['name']
+        )
 
     # Callbacks
     checkpoint_callback = CheckpointHandler.get_checkpoint_callback(
@@ -37,7 +40,6 @@ def main(args):
         mode=early_stopper_config['mode']
     )
 
-    trainer_cfg = default_cfg.get('trainer', {})
     global_params = default_cfg.get('global_params', {})
     data_params = data_cfg.get('data', {})
 

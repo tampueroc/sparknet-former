@@ -1,9 +1,10 @@
 from .datamodule import FireDataModule
 from .dataset import FireDataset
-from .transforms import FireTransforms
+from .transforms import LandscapeNormalize, WeatherNormalize
 
 __all__ = [
         "FireDataModule",
         "FireDataset",
-        "FireTransforms"
+        "LandscapeNormalize",
+        "WeatherNormalize"
 ]
