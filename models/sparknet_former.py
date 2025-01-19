@@ -153,20 +153,6 @@ class SparkNetFormer(pl.LightningModule):
         self.val_precision.update(pred_binary, isochrone_mask_flattened)
         self.val_recall.update(pred_binary, isochrone_mask_flattened)
         self.val_f1.update(pred_binary, isochrone_mask_flattened)
-        # Log predicted vs. target images (only for the first batch of the epoch)
-        if batch_idx == 0:
-            # Normalize predictions and targets to [0, 1] for TensorBoard
-            pred_images = torch.sigmoid(pred.detach().cpu())  # Apply sigmoid for visualization
-            target_images = isochrone_mask.detach().cpu()
-
-            # Concatenate predictions and targets along width
-            side_by_side = torch.cat([pred_images, target_images], dim=-1)  # [B, C, H, W * 2]
-
-            # Create a grid for visualization
-            comparison_grid = vutils.make_grid(side_by_side, nrow=4, normalize=True)
-
-            # Log the comparison grid to TensorBoard
-            self.logger.experiment.add_image("Predicted vs Target Masks", comparison_grid, self.current_epoch)
         return loss
 
     def configure_optimizers(self):
