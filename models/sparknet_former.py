@@ -6,43 +6,19 @@ from .encoders import FireStateEncoder, StaticLandscapeEncoder
 from .transformers import TemporalTransformerEncoder
 from .decoders import FeatureFusion, TransposedConvDecoder
 
-def compute_loss(pred, target, mask=None):
+
+def compute_loss(pred, target):
     """
-    Computes the loss with an optional mask for valid timesteps.
+    Computes the binary cross-entropy loss.
 
     Args:
         pred (Tensor): Predicted output, e.g., [B, T, H, W].
         target (Tensor): Ground truth, e.g., [B, T, H, W].
-        mask (Tensor, optional): Validity mask, e.g., [B, T].
 
     Returns:
-        loss: Masked loss value.
+        loss: Loss value.
     """
-    if mask is not None:
-        print(f"Mask shape before expand: {mask.shape}")
-        print(f"Pred shape: {pred.shape}")
-        # Correctly reshape mask to match [B, T, 1, 1]
-        mask = mask.unsqueeze(-1).unsqueeze(-1)  # [B, T] -> [B, T, 1, 1]
-
-        # Expand mask to match spatial dimensions [B, T, H, W]
-        mask = mask.expand(-1, -1, pred.size(2), pred.size(3))
-
-        # Apply mask to pred and target
-        pred = pred * mask
-        target = target * mask
-
-        # Normalize by the number of valid positions
-        valid_positions = mask.sum()
-        if valid_positions > 0:
-            loss = F.binary_cross_entropy_with_logits(pred, target, reduction='sum') / valid_positions
-        else:
-            # Handle edge case where no valid positions are available
-            loss = torch.tensor(0.0, device=pred.device)
-    else:
-        # Standard loss computation without masking
-        loss = F.binary_cross_entropy_with_logits(pred, target)
-
-    return loss
+    return F.binary_cross_entropy_with_logits(pred, target)
 
 class SparkNetFormer(pl.LightningModule):
     def __init__(self, config, learning_rate=1e-3):
