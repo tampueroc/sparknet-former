@@ -34,6 +34,7 @@ class TemporalTransformerEncoder(nn.Module):
 
         # Positional Encoding
         self.use_positional_encoding = use_positional_encoding
+        self.patch_size = patch_size
         if self.use_positional_encoding:
             self.pos_encoder = SinusoidalPositionalEncoding(d_model=d_model, max_len=5000)
             self.patch_pos_encoder = Learnable2DPositionalEncoding(d_model, h // patch_size, w // patch_size)
