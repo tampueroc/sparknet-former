@@ -90,6 +90,13 @@ class TemporalTransformerEncoder(nn.Module):
         # Step 3: Combine patch tokens across timesteps
         patch_tokens = torch.cat(patch_tokens, dim=1)  # [B, T * H' * W', d_model]
 
+        # Step 3: Adjust valid_tokens mask for spatial dimensions
+        if src_key_padding_mask is not None:
+            # src_key_padding_mask: [B, T]
+            src_key_padding_mask = src_key_padding_mask.unsqueeze(1).unsqueeze(2)  # [B, 1, 1, T]
+            src_key_padding_mask = src_key_padding_mask.expand(-1, H_prime, W_prime, -1)  # [B, H', W', T]
+            src_key_padding_mask = src_key_padding_mask.reshape(B * H_prime * W_prime, T)  # [B * H' * W', T]
+
         # Step 4: Pass through the Transformer
         encoded = self.transformer_encoder(
             patch_tokens, mask=src_mask, src_key_padding_mask=src_key_padding_mask
