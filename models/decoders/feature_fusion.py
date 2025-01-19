@@ -53,27 +53,26 @@ class FeatureFusion(nn.Module):
     def forward(self, fire_encodings, static_encoding, wind_inputs):
         """
         Args:
-            fire_encodings (Tensor): [B, T, in_channels, H, W].
-            static_encoding (Tensor): [B, in_channels, H, W].
-            wind_inputs (Tensor): [B, T, wind_dim].
+            fire_encodings (Tensor): [B, T, d_model, H, W] - Fire state embeddings over timesteps.
+            static_encoding (Tensor): [B, 1, d_model, H, W] - Static landscape embeddings.
+            wind_inputs (Tensor): [B, T, wind_dim] - Wind inputs per timestep.
 
         Returns:
-            fused (Tensor): [B, T, d_model, H, W] fused features over time and space.
+            fused (Tensor): [B, T, d_model, H, W] - Fused feature embeddings per timestep.
         """
-        B, T, _, H, W = fire_encodings.shape
+        B, T, d_model, H, W = fire_encodings.shape
 
-        # 1) Project fire encodings [B, T, in_channels, H, W] -> [B, T, d_model, H, W]
-        fire_enc = self.fire_projection(fire_encodings.flatten(0, 1))  # [B*T, d_model, H, W]
-        fire_enc = fire_enc.view(B, T, -1, H, W)                      # [B, T, d_model, H, W]
+        # 1) Project fire encodings (if needed, here assumed to be d_model)
+        fire_enc = self.fire_projection(fire_encodings)  # [B, T, d_model, H, W]
 
-        # 2) Project static encoding [B, in_channels, H, W] -> [B, d_model, H, W]
-        static_enc = self.static_projection(static_encoding)           # [B, d_model, H, W]
-        static_enc = static_enc.unsqueeze(1).expand(B, T, -1, H, W)    # [B, T, d_model, H, W]
+        # 2) Broadcast static encoding to all timesteps
+        static_enc = self.static_projection(static_encoding)  # [B, 1, d_model, H, W]
+        static_enc = static_enc.expand(-1, T, -1, -1, -1)     # [B, T, d_model, H, W]
 
         # 3) Project wind inputs [B, T, wind_dim] -> [B, T, d_model, 1, 1]
-        wind_enc = self.wind_projection(wind_inputs)                   # [B, T, d_model]
-        wind_enc = wind_enc.unsqueeze(-1).unsqueeze(-1)                # [B, T, d_model, 1, 1]
-        wind_enc = wind_enc.expand(-1, -1, -1, H, W)                   # [B, T, d_model, H, W]
+        wind_enc = self.wind_projection(wind_inputs)          # [B, T, d_model]
+        wind_enc = wind_enc.unsqueeze(-1).unsqueeze(-1)       # [B, T, d_model, 1, 1]
+        wind_enc = wind_enc.expand(-1, -1, -1, H, W)          # [B, T, d_model, H, W]
 
         # 4) Fuse
         if self.fusion_method == 'concat':

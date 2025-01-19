@@ -46,26 +46,21 @@ class FireStateEncoder(nn.Module):
     def forward(self, x):
         """
         Args:
-            x (Tensor): Fire mask sequence with shape [B, T, in_channels, H, W]
-                        or [B, T, H, W] if in_channels=1.
+            x (Tensor): Fire mask sequence with shape [B, T, C, H, W].
 
         Returns:
-            embeddings (Tensor): Encoded features with shape [B, T, output_dim, H', W']
-                                 or flattened if you prefer [B, T, output_dim].
+            embeddings (Tensor): Encoded features with shape [B, T, output_dim, H', W'].
         """
-        # 1) If x has shape [B, T, H, W], add a channel dim.
-        if x.dim() == 4:
-            x = x.unsqueeze(2)  # Now [B, T, 1, H, W]
-
         B, T, C, H, W = x.shape
         # We'll encode each timestep individually.
 
         embeddings = []
         for t in range(T):
-            # shape for that timestep: [B, in_channels, H, W]
-            x_t = x[:, t, :, :, :]  # [B, C, H, W]
-            out_t = self.conv_layers(x_t)      # [B, _, H', W']
-            out_t = self.projection(out_t)     # [B, output_dim, H', W']
+            # Extract the fire mask for timestep t: shape [B, C, H, W]
+            x_t = x[:, t, :, :, :]
+            # Pass through convolutional layers
+            out_t = self.conv_layers(x_t)  # [B, _, H', W']
+            out_t = self.projection(out_t)  # [B, output_dim, H', W']
             embeddings.append(out_t)
 
         # Stack along time dimension => [B, T, output_dim, H', W']

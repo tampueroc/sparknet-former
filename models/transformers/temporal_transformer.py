@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from .positional_encoders import SinusoidalPositionalEncoding
+from .patch_positional_encoders import Learnable2DPositionalEncoding
 
 class TemporalTransformerEncoder(nn.Module):
     """
@@ -15,6 +16,9 @@ class TemporalTransformerEncoder(nn.Module):
                  dim_feedforward=512,
                  dropout=0.1,
                  activation='relu',
+                 h=50,
+                 w=50,
+                 patch_size=5,
                  use_positional_encoding=True):
         """
         Args:
@@ -32,6 +36,7 @@ class TemporalTransformerEncoder(nn.Module):
         self.use_positional_encoding = use_positional_encoding
         if self.use_positional_encoding:
             self.pos_encoder = SinusoidalPositionalEncoding(d_model=d_model, max_len=5000)
+            self.patch_pos_encoder = Learnable2DPositionalEncoding(d_model, h // patch_size, w // patch_size)
 
         # Transformer Encoder
         encoder_layer = nn.TransformerEncoderLayer(
@@ -47,7 +52,7 @@ class TemporalTransformerEncoder(nn.Module):
     def forward(self, x, src_mask=None, src_key_padding_mask=None):
         """
         Args:
-            x (Tensor): [B, T, C, H, W]
+            x (Tensor): [B, T, d_model, H, W] - Fused spatiotemporal embeddings.
             src_mask (Tensor): Optional attention mask of shape [T, T].
             src_key_padding_mask (Tensor): Optional padding mask of shape [B * H * W, T].
 
@@ -57,20 +62,37 @@ class TemporalTransformerEncoder(nn.Module):
         """
         B, T, C, H, W = x.shape
 
-        # Reshape for processing each spatial position independently
-        x = x.permute(0, 3, 4, 1, 2)  # [B, H, W, T, C]
-        x = x.reshape(B * H * W, T, C)  # [B * H * W, T, C]
-
-        # Optionally add positional encoding
+        # Step 1: Add temporal positional encoding
+        # Reshape to [B * H * W, T, d_model] for temporal positional encoding
+        x_temporal = x.permute(0, 3, 4, 1, 2).reshape(B * H * W, T, C)  # [B * H * W, T, d_model]
         if self.use_positional_encoding:
-            x = self.pos_encoder(x)  # [B * H * W, T, C]
+            x_temporal = self.pos_encoder(x_temporal)  # Add temporal positional encoding
 
-        # Pass through the Transformer
+        # Reshape back to [B, T, d_model, H, W]
+        x_temporal = x_temporal.view(B, H, W, T, C).permute(0, 3, 4, 1, 2)  # [B, T, d_model, H, W]
+
+        # Step 2: Extract patches and add patch positional encoding
+        patch_tokens = []
+        H_prime, W_prime = H // self.patch_size, W // self.patch_size
+        for t in range(T):
+            # Extract patches for each timestep
+            patches = self.patch_embed(x_temporal[:, t])  # [B, H' * W', d_model]
+
+            # Add patch positional encoding
+            if self.use_positional_encoding:
+                patches = self.patch_pos_encoder(patches)  # [B, H' * W', d_model]
+
+            patch_tokens.append(patches)
+
+        # Step 3: Combine patch tokens across timesteps
+        patch_tokens = torch.cat(patch_tokens, dim=1)  # [B, T * H' * W', d_model]
+
+        # Step 4: Pass through the Transformer
         encoded = self.transformer_encoder(
-            x, mask=src_mask, src_key_padding_mask=src_key_padding_mask
-        )  # [B * H * W, T, d_model]
+            patch_tokens, mask=src_mask, src_key_padding_mask=src_key_padding_mask
+        )  # [B, T * H' * W', d_model]
 
-        # Reshape back to spatiotemporal form
-        encoded = encoded.view(B, H, W, T, -1).permute(0, 3, 4, 1, 2)  # [B, T, d_model, H, W]
+        # Step 5: Reshape back to spatiotemporal form
+        encoded = encoded.view(B, T, H_prime, W_prime, -1).permute(0, 1, 4, 2, 3)  #
 
         return encoded

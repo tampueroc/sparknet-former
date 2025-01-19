@@ -33,12 +33,21 @@ class StaticLandscapeEncoder(nn.Module):
     def forward(self, x):
         """
         Args:
-            x (Tensor): Static input with shape [B, in_channels, H, W].
+            x (Tensor): Static input with shape [B, T=1, C, H, W].
+
 
         Returns:
-            embedding (Tensor): Encoded static features, e.g. [B, output_dim, H', W'].
+            embedding (Tensor): Encoded static features with shape [B, T=1, output_dim, H', W'].
         """
-        out = self.conv_layers(x)
-        out = self.projection(out)
-        return out
+        B, T, C, H, W = x.shape
+        assert T == 1, "StaticLandscapeEncoder expects T=1 for static data."
 
+        # Flatten temporal dimension and process the static landscape
+        x = x.view(B * T, C, H, W)  # Shape becomes [B * T, C, H, W]
+        out = self.conv_layers(x)  # [B * T, _, H', W']
+        out = self.projection(out)  # [B * T, output_dim, H', W']
+        out = self.conv_layers(x)
+
+        # Reshape back to include the temporal dimension T=1
+        out = out.view(B, T, -1, out.shape[2], out.shape[3])  # [B, T, output_dim, H', W']
+        return out
