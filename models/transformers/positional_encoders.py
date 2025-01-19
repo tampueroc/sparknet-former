@@ -2,11 +2,11 @@ import math
 import torch
 import torch.nn as nn
 
-
 class SinusoidalPositionalEncoding(nn.Module):
     """
     Computes and adds sinusoidal positional embeddings along the temporal axis (T).
     """
+
     def __init__(self, d_model, max_len=5000):
         """
         Args:
@@ -30,27 +30,29 @@ class SinusoidalPositionalEncoding(nn.Module):
     def forward(self, x):
         """
         Args:
-            x (Tensor): Input embeddings of shape [batch_size, T, d_model, H, W].
+            x (Tensor): Input embeddings of shape [batch_size * H * W, T, d_model].
 
         Returns:
             Tensor: The same shape as x, with positional encodings added along T.
         """
-        batch_size, T, d_model, H, W = x.shape
+        batch_size, seq_len, d_model = x.shape
 
         # Validate the d_model matches
         if d_model != self.pe.size(1):
             raise ValueError(f"Input embedding dimension {d_model} does not match positional encoding dimension {self.pe.size(1)}.")
 
-        # Ensure T doesn't exceed precomputed max_len
-        if T > self.pe.size(0):
-            raise ValueError(f"Temporal sequence length {T} exceeds the maximum length {self.pe.size(0)} of positional encoding.")
+        # Ensure seq_len doesn't exceed precomputed max_len
+        if seq_len > self.pe.size(0):
+            raise ValueError(f"Sequence length {seq_len} exceeds the maximum length {self.pe.size(0)} of positional encoding.")
 
         # Extract required positional encodings
-        pos_encoding = self.pe[:T, :].unsqueeze(1).unsqueeze(3).unsqueeze(4)  # [T, 1, d_model, 1, 1]
+        pos_encoding = self.pe[:seq_len, :].unsqueeze(0)  # [1, T, d_model]
 
-        # Add positional encodings along T, broadcasting over H and W
+        # Add positional encodings along T
         x = x + pos_encoding
         return x
+
+
 
 class LearnablePositionalEncoding:
     """
