@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+import torchvision.utils as vutils
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -120,6 +121,25 @@ class SparkNetFormer(pl.LightningModule):
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
         loss = compute_loss(pred, isochrone_mask)
         self.log("val_loss", loss, prog_bar=True)
+        # Log predicted vs. target images (only for the first batch of the epoch)
+        if batch_idx == 0:
+            # Normalize predictions and targets to [0, 1] for TensorBoard
+            pred_images = torch.sigmoid(pred.detach().cpu())  # Apply sigmoid for visualization
+            target_images = isochrone_mask.detach().cpu()
+
+            # Resize if necessary to ensure matching dimensions
+            if pred_images.size() != target_images.size():
+                target_images = F.interpolate(target_images, size=pred_images.shape[-2:], mode="nearest")
+
+            # Create side-by-side comparisons
+            side_by_side = torch.cat([pred_images.unsqueeze(1), target_images.unsqueeze(1)], dim=-1)  # [B, C, H, W * 2]
+
+            # Create a grid for visualization
+            comparison_grid = vutils.make_grid(side_by_side, nrow=4, normalize=True)
+
+            # Log the comparison grid to TensorBoard
+            self.logger.experiment.add_image("Predicted vs Target Masks", comparison_grid, self.current_epoch)
+
         return loss
 
     def configure_optimizers(self):
