@@ -58,7 +58,11 @@ def main(args):
     dm.setup()
 
     # 3 Initialize the Model
-    model = SparkNetFormer(model_cfg)
+    model = SparkNetFormer(
+        model_cfg=model_cfg,
+        data_cfg=data_cfg,
+        default_cfg=default_cfg
+    )
 
     trainer = pl.Trainer(
         max_epochs=trainer_cfg['max_epochs'],

@@ -22,9 +22,15 @@ def compute_loss(pred, target):
     return F.binary_cross_entropy_with_logits(pred, target)
 
 class SparkNetFormer(pl.LightningModule):
-    def __init__(self, config, learning_rate=1e-3):
+    def __init__(self, model_cfg, data_cfg, default_cfg):
         super().__init__()
         self.save_hyperparameters()
+
+        # Use configurations as needed
+        self.learning_rate = self.hparams.data_cfg['global_params']['learning_rate']
+        self.sequence_length = self.hparams.data_cfg['sequence_length']
+        self.batch_size = self.hparams.data_cfg['batch_size']
+        self.seed = self.hparams.default_cfg['global_params']['seed']
 
         # Metrics for training
         self.train_accuracy = torchmetrics.classification.BinaryAccuracy()
@@ -39,7 +45,7 @@ class SparkNetFormer(pl.LightningModule):
         self.val_f1 = torchmetrics.classification.BinaryF1Score()
 
         # 1. Encoders
-        fire_cfg = config["fire_state_encoder"]
+        fire_cfg = model_cfg["fire_state_encoder"]
         self.fire_state_encoder = FireStateEncoder(
             in_channels=fire_cfg["in_channels"],
             base_num_filters=fire_cfg["base_num_filters"],
@@ -47,7 +53,7 @@ class SparkNetFormer(pl.LightningModule):
             output_dim=fire_cfg["output_dim"]
         )
 
-        static_cfg = config["static_landscape_encoder"]
+        static_cfg = model_cfg["static_landscape_encoder"]
         self.static_landscape_encoder = StaticLandscapeEncoder(
             in_channels=static_cfg["in_channels"],
             base_num_filters=static_cfg["base_num_filters"],
@@ -56,7 +62,7 @@ class SparkNetFormer(pl.LightningModule):
         )
 
         # 2. Fusion
-        fusion_cfg = config["feature_fusion"]
+        fusion_cfg = model_cfg["feature_fusion"]
         self.feature_fusion = FeatureFusion(
             fire_dim=fusion_cfg["fire_dim"],      # e.g. same as fire_cfg["output_dim"]
             static_dim=fusion_cfg["static_dim"],  # e.g. same as static_cfg["output_dim"]
@@ -67,7 +73,7 @@ class SparkNetFormer(pl.LightningModule):
         )
 
         # 3. Temporal Transformer
-        transformer_cfg = config["temporal_transformer"]
+        transformer_cfg = model_cfg["temporal_transformer"]
         self.temporal_transformer = TemporalTransformerEncoder(
             d_model=transformer_cfg["d_model"],
             nhead=transformer_cfg["nhead"],
@@ -79,7 +85,7 @@ class SparkNetFormer(pl.LightningModule):
         )
 
         # 4. Decoder
-        dec_cfg = config["transposed_conv_decoder"]
+        dec_cfg = model_cfg["transposed_conv_decoder"]
         self.decoder = TransposedConvDecoder(
             in_channels=dec_cfg["in_channels"],
             base_num_filters=dec_cfg["base_num_filters"],
@@ -163,5 +169,5 @@ class SparkNetFormer(pl.LightningModule):
         return {"loss": loss, "predictions": pred, "targets": isochrone_mask}
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        return optim.Adam(self.parameters(), lr=self.learning_rate)
 
