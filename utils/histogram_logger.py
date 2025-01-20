@@ -23,9 +23,13 @@ class HistogramLoggerCallback(pl.Callback):
                     continue
 
                 # Log weights
-                trainer.logger.experiment.add_histogram(f"{name}_weights", param, trainer.current_epoch)
+                trainer.logger.experiment.add_histogram(
+                    f"{name}_weights", param, global_step=trainer.current_epoch
+                )
 
                 # Log gradients (if available)
                 if param.grad is not None:
-                    trainer.logger.experiment.add_histogram(f"{name}_gradients", param.grad, trainer.current_epoch)
+                    trainer.logger.experiment.add_histogram(
+                        f"{name}_gradients", param.grad, global_step=trainer.current_epoch
+                    )
 
