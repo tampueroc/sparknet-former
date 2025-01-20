@@ -26,6 +26,18 @@ class SparkNetFormer(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
+        # Define example inputs with matching shapes
+        B, T, H, W = data_cfg['batch_size'], data_cfg['sequence_length'], 400, 400
+        C = model_cfg['static_landscape_encoder']['in_channels']
+        wind_features = model_cfg['feature_fusion']['wind_dim']
+
+        self.example_input_array = (
+            torch.randn(B, T, H, W),                # fire_sequence
+            torch.randn(B, C, H, W),                # static_data
+            torch.randn(B, T, wind_features),       # wind_inputs
+            torch.randint(0, 2, (B, T))             # valid_tokens
+        )
+
         # Use configurations as needed
         self.learning_rate = self.hparams.data_cfg['global_params']['learning_rate']
         self.sequence_length = self.hparams.data_cfg['sequence_length']
