@@ -35,6 +35,7 @@ class SparkNetFormer(pl.LightningModule):
             torch.randn(B, T, 1, H, W),                # fire_sequence: temporal fire masks
             torch.randn(B, 1, C, H, W),                  # static_data: static landscape data
             torch.randn(B, T, wind_features),         # wind_inputs: wind speed and direction inputs
+            torch.randn(B, T)
         )
 
         # Use configurations as needed
