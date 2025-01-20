@@ -27,7 +27,7 @@ class SparkNetFormer(pl.LightningModule):
         self.save_hyperparameters()
 
         # Define example inputs with matching shapes
-        B, T, H, W = data_cfg['batch_size'], data_cfg['sequence_length'], 400, 400
+        B, T, H, W = data_cfg['data']['batch_size'], data_cfg['data']['sequence_length'], 400, 400
         C = model_cfg['static_landscape_encoder']['in_channels']
         wind_features = model_cfg['feature_fusion']['wind_dim']
 
@@ -40,8 +40,8 @@ class SparkNetFormer(pl.LightningModule):
 
         # Use configurations as needed
         self.learning_rate = self.hparams.data_cfg['global_params']['learning_rate']
-        self.sequence_length = self.hparams.data_cfg['sequence_length']
-        self.batch_size = self.hparams.data_cfg['batch_size']
+        self.sequence_length = self.hparams.data_cfg['data']['sequence_length']
+        self.batch_size = self.hparams.data_cfg['data']['batch_size']
         self.seed = self.hparams.default_cfg['global_params']['seed']
 
         # Metrics for training
