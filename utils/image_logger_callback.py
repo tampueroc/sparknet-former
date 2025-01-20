@@ -40,8 +40,8 @@ class ImagePredictionLogger(Callback):
 
             # Log the comparison grid to TensorBoard
             trainer.logger.experiment.add_image(
-                f"Epoch {pl_module.current_epoch}: Predictions | Binary Mask | Targets",
+                "Predictions | Binary Mask | Targets",
                 comparison_grid,
-                pl_module.current_epoch
+                global_step=pl_module.current_epoch  # Use `global_step` to track progression
             )
 
