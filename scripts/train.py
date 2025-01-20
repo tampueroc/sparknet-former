@@ -65,7 +65,8 @@ def main(args):
     # 3 Initialize the Model
     model = SparkNetFormer(
         model_cfg=model_cfg,
-        data_cfg=data_cfg,
+        data_params=data_params,
+        global_params=global_params,
         default_cfg=default_cfg
     )
 
