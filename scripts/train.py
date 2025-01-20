@@ -1,4 +1,5 @@
 import yaml
+import os
 import argparse
 import pytorch_lightning as pl
 from utils import Logger, CheckpointHandler, EarlyStoppingHandler, ImagePredictionLogger
@@ -22,15 +23,19 @@ def main(args):
     checkpoint_config = trainer_cfg['checkpoint_handler']
 
     # Logger
-    if logger_config.get('enabled', False):
-        logger = Logger.get_tensorboard_logger(
-            save_dir=logger_config['dir'],
-            name=logger_config['name']
-        )
+    logger = Logger.get_tensorboard_logger(
+        save_dir=logger_config['dir'],
+        name=logger_config['name']
+    )
+    # Access the logger's experiment version
+    experiment_version = logger.version
+
+    # Create a directory path that includes the experiment version
+    checkpoint_dir = os.path.join(checkpoint_config['dir'], f"version_{experiment_version}")
 
     # Callbacks
     checkpoint_callback = CheckpointHandler.get_checkpoint_callback(
-        dirpath=checkpoint_config['dir'],
+        dirpath=checkpoint_dir,
         monitor=checkpoint_config['monitor'],
         mode=checkpoint_config['mode']
     )
