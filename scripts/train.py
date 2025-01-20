@@ -35,7 +35,7 @@ def main(args):
 
     # Callbacks
     callbacks = []
-    callbacks_cfg = default_cfg['callbacks']
+    callbacks_cfg = trainer_cfg['callbacks']
     histogram_logger_cfg = callbacks_cfg['histogram_logger']
     if histogram_logger_cfg['enabled'] is True:
         histogram_logger = HistogramLoggerCallback(
