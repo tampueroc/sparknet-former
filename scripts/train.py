@@ -2,7 +2,7 @@ import yaml
 import os
 import argparse
 import pytorch_lightning as pl
-from utils import Logger, CheckpointHandler, EarlyStoppingHandler, ImagePredictionLogger
+from utils import Logger, CheckpointHandler, EarlyStoppingHandler, ImagePredictionLogger, HistogramLoggerCallback
 from data import FireDataModule
 from models import SparkNetFormer
 
@@ -34,18 +34,30 @@ def main(args):
     checkpoint_dir = os.path.join(checkpoint_config['dir'], f"version_{experiment_version}")
 
     # Callbacks
+    callbacks = []
+    callbacks_cfg = default_cfg['callbacks']
+    histogram_logger_cfg = callbacks_cfg['histogram_logger']
+    if histogram_logger_cfg['enabled'] is True:
+        histogram_logger = HistogramLoggerCallback(
+            log_every_n_epochs=histogram_logger_cfg['log_every_n_epochs'],
+            layers_to_log=histogram_logger_cfg['layers_to_log']
+        )
+        callbacks.append(histogram_logger)
     checkpoint_callback = CheckpointHandler.get_checkpoint_callback(
         dirpath=checkpoint_dir,
         monitor=checkpoint_config['monitor'],
         mode=checkpoint_config['mode']
     )
+    callbacks.append(checkpoint_callback)
     early_stopping_callback = EarlyStoppingHandler.get_early_stopping_callback(
         monitor=early_stopper_config['monitor'],
         patience=early_stopper_config['patience'],
         mode=early_stopper_config['mode'],
         min_delta=early_stopper_config['min_delta']
     )
+    callbacks.append(early_stopping_callback)
     image_logger_callback = ImagePredictionLogger()
+    callbacks.append(image_logger_callback)
 
     global_params = default_cfg.get('global_params', {})
     data_params = data_cfg.get('data', {})
@@ -76,7 +88,7 @@ def main(args):
         devices=trainer_cfg['devices'],
         precision=trainer_cfg['precision'],
         logger=logger,
-        callbacks=[checkpoint_callback, early_stopping_callback, image_logger_callback]
+        callbacks=callbacks
     )
 
     trainer.fit(

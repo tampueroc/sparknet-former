@@ -4,6 +4,11 @@ trainer:
   max_epochs: 10
   default_root_dir: ./logs  # where to save logs/checkpoints
   precision: 16-mixed
+  callbacks:
+    histogram_logger:
+      enabled: True
+      log_every_n_epochs: 1
+      layers_to_log: [temporal_transformer, decoder]
   early_stopper_handler:
     min_delta: 0.01
     patience: 5
