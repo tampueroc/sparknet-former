@@ -32,8 +32,8 @@ class SparkNetFormer(pl.LightningModule):
         wind_features = model_cfg['feature_fusion']['wind_dim']
 
         self.example_input_array = (
-            torch.randn(B, T, H, W),                # fire_sequence
-            torch.randn(B, C, H, W),                # static_data
+            torch.randn(B, T, 1, H, W),                # fire_sequence
+            torch.randn(B, 1, C, H, W),                # static_data
             torch.randn(B, T, wind_features),       # wind_inputs
             torch.randint(0, 2, (B, T))             # valid_tokens
         )
