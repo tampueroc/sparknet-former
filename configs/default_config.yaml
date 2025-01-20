@@ -6,7 +6,7 @@ trainer:
   precision: 16-mixed
   early_stopper_handler:
     min_delta: 0.01
-    patience: 10
+    patience: 5
     mode: min
     monitor: val_loss
   checkpoint_handler:
