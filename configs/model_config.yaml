@@ -33,4 +33,4 @@ transposed_conv_decoder:
   depth: 9
   out_channels: 1          # single-channel output for binary fire mask
   use_batchnorm: true
-  final_activation: "sigmoid"
+  final_activation: null
