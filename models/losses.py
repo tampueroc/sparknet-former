@@ -37,7 +37,7 @@ class WeightedFocalLoss(nn.Module):
         pt = p * targets + (1 - p) * (1 - targets)
 
         # 4) Gather alpha for each pixel
-        alpha_t = self.alpha.to(inputs.device).gather(0, targets.long().view(-1))
+        alpha_t = self.alpha.to(inputs.device).gather(0, targets.long().view(-1)).view_as(targets)
 
         # 5) Apply focal scaling
         focal_loss = alpha_t * (1 - pt).pow(self.gamma) * bce_loss
