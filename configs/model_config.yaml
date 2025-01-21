@@ -2,13 +2,13 @@ fire_state_encoder:
   in_channels: 1         # Number of channels in the fire bitmask (e.g., binary mask = 1)
   base_num_filters: 32   # Number of filters in the first convolution
   depth: 3               # Number of convolutional layers
-  output_dim: 128        # Dimensionality of the final feature embedding
+  output_dim: 256        # Dimensionality of the final feature embedding
 
 static_landscape_encoder:
   in_channels: 8         # Each channel represents a landscape feature
   base_num_filters: 32
   depth: 3
-  output_dim: 128
+  output_dim: 256
 
 feature_fusion:
   fire_dim: 128     # Must match FireStateEncoder's output_dim (or the dimension after pooling).
@@ -28,7 +28,7 @@ temporal_transformer:
   use_positional_encoding: True  # Whether to apply sinusoidal positional encoding to the input sequenc
 
 transposed_conv_decoder:
-  in_channels: 128
+  in_channels: 256
   base_num_filters: 64
   depth: 9
   out_channels: 1          # single-channel output for binary fire mask
