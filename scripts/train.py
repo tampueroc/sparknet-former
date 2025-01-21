@@ -63,7 +63,7 @@ def main(args):
     data_params = data_cfg.get('data', {})
 
     # Dynamic Alpha Callback for Focal Loss
-    if global_params.get('loss_type') == "focal" and global_params['focal'].get('alpha') == "auto":
+    if global_params.get('loss_type') == "focal" and global_params['focal'].get('dynamic_alpha') is True:
         dynamic_alpha_callback = DynamicAlphaCallback()
         callbacks.append(dynamic_alpha_callback)
 
