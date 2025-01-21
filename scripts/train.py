@@ -64,7 +64,7 @@ def main(args):
 
     # Dynamic Alpha Callback for Focal Loss
     if global_params.get('loss_type') == "focal" and global_params['focal'].get('alpha') == "auto":
-        dynamic_alpha_callback = DynamicAlphaCallback(focal_loss=model_cfg['loss_fn'])
+        dynamic_alpha_callback = DynamicAlphaCallback(focal_loss=global_params['loss_fn'])
         callbacks.append(dynamic_alpha_callback)
 
     # 2 Initialize the DataModule
