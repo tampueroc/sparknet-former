@@ -1,7 +1,7 @@
 from pytorch_lightning.callbacks import Callback
 
 class DynamicAlphaCallback(Callback):
-    def __init__(self, loss_fn_attr="loss_fn"):
+    def __init__(self):
         """
         Callback to dynamically compute class imbalance (alpha) for focal loss.
 
@@ -9,8 +9,6 @@ class DynamicAlphaCallback(Callback):
             loss_fn_attr: The attribute name of the loss function in the model (default: "loss_fn").
             auto_alpha_key: The key in the hyperparameters to check if auto alpha is enabled.
         """
-        self.loss_fn_attr = loss_fn_attr
-
     def on_train_epoch_start(self, trainer, pl_module):
         # Collect the dataloader for the training dataset
         dataloader = trainer.train_dataloader
@@ -30,9 +28,7 @@ class DynamicAlphaCallback(Callback):
             alpha_0 = float(fire_pixel_count) / total_pixels
 
             # Update the alpha value in the focal loss
-            if hasattr(pl_module, self.loss_fn_attr):
-                loss_fn = getattr(pl_module, self.loss_fn_attr)
-                loss_fn.alpha = alpha_1  # Use float values directly
-                pl_module.log("dynamic_alpha_1", alpha_1)
-                pl_module.log("dynamic_alpha_0", alpha_0)
+            pl_module.loss_fn.alpha = alpha_1  # Use float values directly
+            pl_module.log("dynamic_alpha_1", alpha_1)
+            pl_module.log("dynamic_alpha_0", alpha_0)
 
