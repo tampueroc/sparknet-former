@@ -14,15 +14,15 @@ feature_fusion:
   fire_dim: 128     # Must match FireStateEncoder's output_dim (or the dimension after pooling).
   static_dim: 128   # Must match StaticLandscapeEncoder's output_dim (after pooling).
   wind_dim: 2       # If you have e.g. wind direction + magnitude.
-  d_model: 128
+  d_model: 256
   method: "concat"
   use_mlp: True
 
 temporal_transformer:
-  d_model: 128                # Dimension of each token/embedding
+  d_model: 256                # Dimension of each token/embedding
   nhead: 4                    # Number of attention heads in each layer
-  num_layers: 2               # Number of stacked TransformerEncoderLayers
-  dim_feedforward: 512        # Feedforward network dimension inside each layer
+  num_layers: 3               # Number of stacked TransformerEncoderLayers
+  dim_feedforward: 1024        # Feedforward network dimension inside each layer
   dropout: 0.1                # Dropout probability in attention & feedforward sub-layers
   activation: "relu"          # Non-linear activation function ("relu" or "gelu" are common)
   use_positional_encoding: True  # Whether to apply sinusoidal positional encoding to the input sequenc
