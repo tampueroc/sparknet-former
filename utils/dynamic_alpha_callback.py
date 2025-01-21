@@ -10,7 +10,6 @@ class DynamicAlphaCallback(Callback):
             loss_fn_attr: The attribute name of the loss function in the model (default: "loss_fn").
             auto_alpha_key: The key in the hyperparameters to check if auto alpha is enabled.
         """
-        self.focal_loss = focal_loss
         self.loss_fn_attr = loss_fn_attr
         self.auto_alpha_key = auto_alpha_key
 
@@ -37,8 +36,7 @@ class DynamicAlphaCallback(Callback):
                 # Update the alpha value in the focal loss
                 if hasattr(pl_module, self.loss_fn_attr):
                     loss_fn = getattr(pl_module, self.loss_fn_attr)
-                    if isinstance(loss_fn, type(self.focal_loss)):
-                        loss_fn.alpha = (alpha_1, alpha_0)  # Update alpha dynamically
-                        pl_module.log("dynamic_alpha_1", alpha_1)
-                        pl_module.log("dynamic_alpha_0", alpha_0)
+                    loss_fn.alpha = (alpha_1, alpha_0)  # Update alpha dynamically
+                    pl_module.log("dynamic_alpha_1", alpha_1)
+                    pl_module.log("dynamic_alpha_0", alpha_0)
 
