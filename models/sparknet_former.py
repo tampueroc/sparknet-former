@@ -2,24 +2,11 @@ import pytorch_lightning as pl
 import torchmetrics
 import torch
 import torch.optim as optim
-import torch.nn.functional as F
 from .encoders import FireStateEncoder, StaticLandscapeEncoder
 from .transformers import TemporalTransformerEncoder
 from .decoders import FeatureFusion, TransposedConvDecoder
+from .losses import WeightedFocalLoss, BCEWithWeights
 
-
-def compute_loss(pred, target):
-    """
-    Computes the binary cross-entropy loss.
-
-    Args:
-        pred (Tensor): Predicted output, e.g., [B, T, H, W].
-        target (Tensor): Ground truth, e.g., [B, T, H, W].
-
-    Returns:
-        loss: Loss value.
-    """
-    return F.binary_cross_entropy_with_logits(pred, target)
 
 class SparkNetFormer(pl.LightningModule):
     def __init__(self, model_cfg, data_params, default_cfg, global_params):
@@ -31,6 +18,19 @@ class SparkNetFormer(pl.LightningModule):
         self.sequence_length = self.hparams.data_params['sequence_length']
         self.batch_size = self.hparams.data_params['batch_size']
         self.seed = self.hparams.global_params['seed']
+
+        # Configure loss function
+        loss_type = self.hparams.global_params.get("loss_type", "bce")
+        if loss_type == "focal":
+            focal_cfg = self.hparams.global_params.get("focal", {})
+            alpha = focal_cfg.get("alpha", 0.25)  # Default alpha for Focal Loss
+            gamma = focal_cfg.get("gamma", 2.0)   # Default gamma for Focal Loss
+            self.loss_fn = WeightedFocalLoss(alpha=alpha, gamma=gamma)
+        elif loss_type == "weighted_bce":
+            pos_weight = self.hparams.global_params.get("pos_weight", None)
+            self.loss_fn = BCEWithWeights(pos_weight=pos_weight)
+        else:
+            self.loss_fn = BCEWithWeights()  # Default BCE
 
         # Metrics for training
         self.train_accuracy = torchmetrics.classification.BinaryAccuracy()
@@ -130,7 +130,7 @@ class SparkNetFormer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
-        loss = compute_loss(pred, isochrone_mask)
+        loss = self.loss_fn(pred, isochrone_mask)
         self.log("train_loss", loss)
         # Update metrics
         pred_binary = (torch.sigmoid(pred) > 0.5).float()  # Convert logits to binary predictions
@@ -150,7 +150,7 @@ class SparkNetFormer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         fire_seq, static_data, wind_inputs, isochrone_mask, valid_tokens = batch
         pred = self(fire_seq, static_data, wind_inputs, valid_tokens)
-        loss = compute_loss(pred, isochrone_mask)
+        loss = self.loss_fn(pred, isochrone_mask)
         self.log("val_loss", loss, prog_bar=True)
 
         # Update Metrics
