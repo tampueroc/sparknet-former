@@ -6,7 +6,6 @@ class DynamicAlphaCallback(Callback):
         Callback to dynamically compute class imbalance (alpha) for focal loss.
 
         Args:
-            focal_loss: The loss object for focal loss (should have an `alpha` attribute).
             loss_fn_attr: The attribute name of the loss function in the model (default: "loss_fn").
             auto_alpha_key: The key in the hyperparameters to check if auto alpha is enabled.
         """
@@ -30,13 +29,13 @@ class DynamicAlphaCallback(Callback):
 
             total_pixels = fire_pixel_count + non_fire_pixel_count
             if total_pixels > 0:
-                alpha_1 = non_fire_pixel_count / total_pixels
-                alpha_0 = fire_pixel_count / total_pixels
+                alpha_1 = float(non_fire_pixel_count) / total_pixels
+                alpha_0 = float(fire_pixel_count) / total_pixels
 
                 # Update the alpha value in the focal loss
                 if hasattr(pl_module, self.loss_fn_attr):
                     loss_fn = getattr(pl_module, self.loss_fn_attr)
-                    loss_fn.alpha = (alpha_1, alpha_0)  # Update alpha dynamically
+                    loss_fn.alpha = alpha_1  # Use float values directly
                     pl_module.log("dynamic_alpha_1", alpha_1)
                     pl_module.log("dynamic_alpha_0", alpha_0)
 
