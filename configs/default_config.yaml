@@ -26,3 +26,8 @@ trainer:
 global_params:
   seed: 42
   learning_rate: 0.0001
+  loss_type: focal
+  pos_weight: null  # Only applies when using loss_type == weighted_bce
+  focal:
+    alpha: 0.25
+    gamma: 2.0
