@@ -21,8 +21,8 @@ class WeightedFocalLoss(nn.Module):
         Compute the Weighted Focal Loss.
 
         Args:
-            inputs (Tensor): Probabilities (sigmoided outputs), shape [B, H, W].
-            targets (Tensor): Binary ground truth, shape [B, H, W].
+            inputs (Tensor): Probabilities (sigmoided outputs), shape [B, T, H, W].
+            targets (Tensor): Binary ground truth, shape [B, T, H, W].
 
         Returns:
             Tensor: Scalar loss value.
@@ -59,8 +59,8 @@ class BCEWithWeights(nn.Module):
         Compute BCE Loss with optional weighting.
 
         Args:
-            inputs (Tensor): Probabilities (sigmoided outputs), shape [B, H, W].
-            targets (Tensor): Binary ground truth, shape [B, H, W].
+            inputs (Tensor): Probabilities (sigmoided outputs), shape [B, T, H, W].
+            targets (Tensor): Binary ground truth, shape [B, T, H, W].
 
         Returns:
             Tensor: Scalar loss value.
