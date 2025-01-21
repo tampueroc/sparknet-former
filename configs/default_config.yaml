@@ -1,6 +1,6 @@
 trainer:
   accelerator: gpu      # or "cpu"
-  devices: ["1"]            # number of GPUs/CPUs
+  devices: [1]
   max_epochs: 10
   default_root_dir: ./logs  # where to save logs/checkpoints
   precision: 16-mixed
