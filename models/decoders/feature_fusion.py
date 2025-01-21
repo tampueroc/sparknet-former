@@ -60,14 +60,18 @@ class FeatureFusion(nn.Module):
         Returns:
             fused (Tensor): [B, T, d_model, H, W] - Fused feature embeddings per timestep.
         """
-        B, T, d_model, H, W = fire_encodings.shape
+        B, T, _, H, W = fire_encodings.shape
 
         # 1) Project fire encodings (if needed, here assumed to be d_model)
-        fire_enc = self.fire_projection(fire_encodings)  # [B, T, d_model, H, W]
+        fire_enc = fire_encodings.permute(0, 1, 3, 4, 2).reshape(-1, fire_encodings.shape[2])  # [(B * T * H * W), fire_dim]
+        fire_enc = self.fire_projection(fire_enc)  # [(B * T * H * W), d_model]
+        fire_enc = fire_enc.view(B, T, H, W, -1).permute(0, 1, 4, 2, 3)  # [B, T, d_model, H, W]
 
         # 2) Broadcast static encoding to all timesteps
+        static_enc = static_encoding.permute(0, 2, 3, 4, 1).reshape(-1, static_encoding.shape[2])  # [(B * H * W), static_dim]
         static_enc = self.static_projection(static_encoding)  # [B, 1, d_model, H, W]
-        static_enc = static_enc.expand(-1, T, -1, -1, -1)     # [B, T, d_model, H, W]
+        static_enc = static_enc.view(B, 1, H, W, -1).permute(0, 1, 4, 2, 3)  # [B, 1, d_model, H, W]
+        static_enc = static_enc.expand(-1, T, -1, -1, -1)  # [B, T, d_model, H, W]
 
         # 3) Project wind inputs [B, T, wind_dim] -> [B, T, d_model, 1, 1]
         wind_enc = self.wind_projection(wind_inputs)          # [B, T, d_model]
