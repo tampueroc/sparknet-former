@@ -1,7 +1,7 @@
 from pytorch_lightning.callbacks import Callback
 
 class DynamicAlphaCallback(Callback):
-    def __init__(self, focal_loss, loss_fn_attr="loss_fn", auto_alpha_key="global_params.focal.alpha"):
+    def __init__(self, loss_fn_attr="loss_fn", auto_alpha_key="global_params.focal.alpha"):
         """
         Callback to dynamically compute class imbalance (alpha) for focal loss.
 
