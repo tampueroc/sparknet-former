@@ -2,7 +2,7 @@ import yaml
 import os
 import argparse
 import pytorch_lightning as pl
-from utils import Logger, CheckpointHandler, EarlyStoppingHandler, ImagePredictionLogger, HistogramLoggerCallback
+from utils import Logger, CheckpointHandler, EarlyStoppingHandler, ImagePredictionLogger, HistogramLoggerCallback, DynamicAlphaCallback
 from data import FireDataModule
 from models import SparkNetFormer
 
@@ -61,6 +61,11 @@ def main(args):
 
     global_params = default_cfg.get('global_params', {})
     data_params = data_cfg.get('data', {})
+
+    # Dynamic Alpha Callback for Focal Loss
+    if global_params.get('loss_type') == "focal" and global_params['focal'].get('alpha') == "auto":
+        dynamic_alpha_callback = DynamicAlphaCallback(focal_loss=model_cfg['loss_fn'])
+        callbacks.append(dynamic_alpha_callback)
 
     # 2 Initialize the DataModule
     dm = FireDataModule(
