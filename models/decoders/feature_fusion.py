@@ -69,7 +69,7 @@ class FeatureFusion(nn.Module):
 
         # 2) Broadcast static encoding to all timesteps
         static_enc = static_encoding.permute(0, 2, 3, 4, 1).reshape(-1, static_encoding.shape[2])  # [(B * H * W), static_dim]
-        static_enc = self.static_projection(static_encoding)  # [B, 1, d_model, H, W]
+        static_enc = self.static_projection(static_enc)  # [B, 1, d_model, H, W]
         static_enc = static_enc.view(B, 1, H, W, -1).permute(0, 1, 4, 2, 3)  # [B, 1, d_model, H, W]
         static_enc = static_enc.expand(-1, T, -1, -1, -1)  # [B, T, d_model, H, W]
 
