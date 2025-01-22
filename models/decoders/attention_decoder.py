@@ -15,11 +15,18 @@ class ChannelAttentionModule(nn.Module):
 
     def forward(self, x):
         B, C, T, H, W = x.size()
-        avg_out = self.fc(self.avg_pool(x).view(B, C)).view(B, C, 1, 1, 1)
-        max_out = self.fc(self.max_pool(x).view(B, C)).view(B, C, 1, 1, 1)
-        out = self.sigmoid(avg_out + max_out)
-        return x * out
 
+        # Perform global pooling (output shape: B x C x 1 x 1 x 1)
+        avg_out = self.avg_pool(x).view(B, C)  # B x C
+        max_out = self.max_pool(x).view(B, C)  # B x C
+
+        # Pass through shared FC layers
+        avg_out = self.fc(avg_out).view(B, C, 1, 1, 1)
+        max_out = self.fc(max_out).view(B, C, 1, 1, 1)
+
+        # Combine and apply sigmoid
+        out = self.sigmoid(avg_out + max_out)
+        return x * out  # Scale input features by attention weights
 
 class SpatialAttentionModule(nn.Module):
     def __init__(self):
